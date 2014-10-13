@@ -10,10 +10,10 @@ global ymax;
 global zmin;
 global zmax;
 %initialise the matrix to store check positions
-NewPosition = zeros(3, N);
+NewPosition = zeros(N, 3);
 %loop through all boids and check they are in bounds
 for i=1:N
-   position = x(:, i);
+   position = x(i, :);
    if position(1) > xmax
       position(1) = xmin+(position(1)-xmax); 
    end
@@ -34,9 +34,9 @@ for i=1:N
    if position(3) < zmin
       position(3) = zmax-(position(3)-zmax); 
    end
-   NewPosition(1, i) = position(1);
-   NewPosition(2, i) = position(2);
-   NewPosition(3, i) = position(3);
+   NewPosition(i, 1) = position(1);
+   NewPosition(i, 2) = position(2);
+   NewPosition(i, 3) = position(3);
 end
 
 end
