@@ -9,14 +9,14 @@ global zmax;
 
 %Setup, Generate N entities at random Locations
 %Endtime
-Endtime = 5;
+Endtime = 100;
 %time step size
 delta = 0.1;
 %noTimeSteps
 TimeSteps = Endtime/delta;
 
 %number of entities
-N = 2000;
+N = 200;
 %generate random gaussian positions
 X = 10;
 x = X*randn(N, 3);
@@ -40,10 +40,10 @@ zmax = maxVal;
 for k=0:TimeSteps
     
     %function to get a
-    a = GetAccelerationGPU(x, v);
+    a = GetAccelerationFlat(x, v);
 
     %calculate new positions etc
-    v_new = v + a*0.0001*delta;
+    v_new = v + a*delta;
     x_new = x + v_new*delta;
     v = v_new;
     x = x_new;

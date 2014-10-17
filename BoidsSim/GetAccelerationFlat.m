@@ -1,10 +1,10 @@
 function [a] = GetAccelerationFlat(x, v)
 
 global N;
-c1=1;
-c2 = 1;
-c3 = 1;
-c4 = 1;
+c1=0.3;
+c2 = 0.3;
+c3 = 5;
+c4 = 30;
 
 a1=zeros(N, 3);
 a2=zeros(N, 3);
@@ -28,30 +28,25 @@ parfor n=1:N
     vr2 = bsxfun(@minus, v2, v2(n));
     vr3 = bsxfun(@minus, v3, v3(n));
     
-    rmag = sqrt(r1.^2 + r2.^2 + r3.^2);
     r = [r1, r2, r3];
     vr = [vr1, vr2, vr3];
-    
-    r1A1 = bsxfun(@rdivide,r1,rmag);
-    r2A1 = bsxfun(@rdivide,r2,rmag);
-    r3A1 = bsxfun(@rdivide,r3,rmag);
-    A1 = [r1A1, r2A1, r3A1];
-%   A1 = bsxfun(@rdivide,r,rmag);
+    drag = vr(n, :).^2*0.1;
+    %calculate the acceleration due to each of the four rules
+    A1 = unitVector(r1, r2, r3);
     A1 = bsxfun(@times, A1, -c1);
-    A1(n, :) = [0,0,0];
-    
     A2 = bsxfun(@times, r, c2);
-    A2(n, :) = [0,0,0];
-    
     A3 = bsxfun(@times, vr, c3);
-    A3(n, :) = [0,0,0];
-      
+    %make sure the boid does not contribute to its own acceleration
+    A1(n, :) = [0,0,0];
+    A2(n, :) = [0,0,0];
+    A3(n, :) = [0,0,0];  
+    
     a1(n, :) = [sum(A1(:, 1)), sum(A1(:, 2)), sum(A1(:, 3))];
     a2(n, :) = [sum(A2(:, 1)), sum(A2(:, 2)), sum(A2(:, 3))];
     a3(n, :) = [sum(A3(:, 1)), sum(A3(:, 2)), sum(A3(:, 3))];
+    a(n, :) = combineAccelerations(a1(n, :), a2(n, :), a3(n, :), a4(n, :)) - drag;
 end
 
 
-a = a1+a2+a3+a4;
 end
 
