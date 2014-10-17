@@ -1,7 +1,5 @@
 __device__
-unsigned int doIterations( double const realPart0,
-                           double const imagPart0,
-                           unsigned int const maxIters ) {
+unsigned int doIterations(double const realPart0, double const imagPart0, unsigned int const maxIters) {
    // Initialize: z = z0
    double realPart = realPart0;
    double imagPart = imagPart0;
