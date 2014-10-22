@@ -1,8 +1,9 @@
+function boid(Endtime, delta, DisplayWorld, maxVal)
 %This script runs a multi-agent simulation
 %%Setup up the enviroment
 %reset local and GPU Memory
-clear;
-reset(gpuDevice);
+
+
 %create global variables
 global N;
 global useGPU;
@@ -13,15 +14,11 @@ global ymax;
 global zmin;
 global zmax;
 
-Endtime = 500; %Endtime
-delta = 0.1; %time step size
 TimeSteps = Endtime/delta; %noTimeSteps
-DisplayWorld = false;
-useGPU = false;
+
 
 %%Generate the Agents
 %Generate N entities with random locations and velocities
-N = 20;   %Number of entities
 X = 90;     %Distance Spread
 V = 3;      %Velocity Spread
  
@@ -36,7 +33,7 @@ velocity.y = V*randn(N, 1);
 velocity.z = V*randn(N, 1);
 
 %%Generate the world
-maxVal = 100;
+
 xmin = -maxVal; 
 xmax = maxVal;
 ymin = -maxVal;

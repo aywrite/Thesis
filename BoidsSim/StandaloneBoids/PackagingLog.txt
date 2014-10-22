@@ -1,0 +1,74 @@
+ant:
+<ant>
+  <mkdir dir="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_redistribution" />
+  <mkdir dir="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing" />
+  <mkdir dir="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_redistribution_files_only" />
+</ant>
+mcc -C -o StandaloneBoids -W WinMain:StandaloneBoids -T link:exe -d C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing -v C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\boid.m 
+Compiler version: 5.2 (R2014b)
+Dependency analysis by REQUIREMENTS.
+[Warning: Adding path "C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim" to
+Compiler path instance.] 
+Parsing file "C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\boid.m"
+	(Referenced from: "Compiler Command Line").
+Deleting 52 temporary MEX authorization files.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_27226_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_15902_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_5090_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_12114_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_20935_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_28618_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_6800_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_3330_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_6605_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_20918_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_12053_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_26584_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_19428_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_30349_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_27924_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_3751_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_8293_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_13818_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_19007_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_11797_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_408_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_10029_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_16000_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_26370_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_19964_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_13244_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_15846_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_2774_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_18607_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_11353_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_18474_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_1267_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_12246_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_5543_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_21046_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_11824_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_4671_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_14157_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_26853_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_29833_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_10309_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_8520_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_28938_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_11029_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_13300_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_7045_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_10419_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_5688_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_11374_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_13231_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_19887_1956.auth'.
+Removing: 'C:\Users\Andrew\AppData\Local\Temp\mathworks_tmp_1956_2073_1956.auth'.
+Generating file "C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\readme.txt".
+Packaging...
+Adding custom icon D:\Program Files\MATLAB\R2014b\toolbox\compiler\Resources\default_icon.ico to C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\StandaloneBoids.exe.
+Attempting to embed the CTF archive into the application C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\StandaloneBoids.exe.
+Finished embedding CTF archive. Deleting the external CTF archive.
+Creating the bundle...
+Web based installer created at C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_redistribution\MyAppInstaller_web.exe.
+Packaging complete.

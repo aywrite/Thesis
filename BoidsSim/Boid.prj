@@ -1,0 +1,97 @@
+<deployment-project plugin="plugin.apptool" plugin-version="1.0">
+  <configuration build-checksum="96701126" file="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\Boid.prj" location="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim" name="Boid" target="target.mlapps" target-name="Package App">
+    <param.appname>Boid</param.appname>
+    <param.authnamewatermark>Andrew Wright</param.authnamewatermark>
+    <param.email>z3373086@zmail.unsw.edu.au</param.email>
+    <param.company>UNSW</param.company>
+    <param.icon />
+    <param.icons />
+    <param.summary>Multi-Agent Bird Like Simulation</param.summary>
+    <param.description />
+    <param.screenshot />
+    <param.version>1.0</param.version>
+    <param.products.name>
+      <item>MATLAB</item>
+      <item>Parallel Computing Toolbox</item>
+    </param.products.name>
+    <param.products.id>
+      <item>'1'</item>
+      <item>'80'</item>
+    </param.products.id>
+    <param.products.version>
+      <item>8.4</item>
+      <item>6.5</item>
+    </param.products.version>
+    <param.platforms />
+    <param.output>C:\Users\Andrew\Desktop\Boid.mlappinstall</param.output>
+    <param.guid>4a40d4be-6e9f-46a1-ba60-d7fcf1ba9cae</param.guid>
+    <unset>
+      <param.authnamewatermark />
+      <param.icon />
+      <param.icons />
+      <param.description />
+      <param.screenshot />
+      <param.version />
+      <param.platforms />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}\boid.m</file>
+    </fileset.main>
+    <fileset.depfun>
+      <file>${PROJECT_ROOT}\checkPosition.m</file>
+      <file>${PROJECT_ROOT}\combineAccelerationsCPU.m</file>
+      <file>${PROJECT_ROOT}\combineAccelerationsGPU.m</file>
+      <file>${PROJECT_ROOT}\GetAccelerationCPU.m</file>
+      <file>${PROJECT_ROOT}\GetAccelerationGPU.m</file>
+      <file>${PROJECT_ROOT}\safteyRDivide.m</file>
+      <file>${PROJECT_ROOT}\scaleMatrix.m</file>
+      <file>${PROJECT_ROOT}\updateForTime.m</file>
+    </fileset.depfun>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}\Benchmarks.csv</file>
+    </fileset.resources>
+    <fileset.package />
+    <build-deliverables>
+      <file location="C:\Users\Andrew\Desktop" name="Boid.mlappinstall" optional="false">C:\Users\Andrew\Desktop\Boid.mlappinstall</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>D:\Program Files\MATLAB\R2014b</root>
+      <toolboxes>
+        <toolbox name="fixedpoint" />
+        <toolbox name="embeddedcoder" />
+        <toolbox name="matlabcoder" />
+      </toolboxes>
+      <toolbox>
+        <fixedpoint>
+          <enabled>true</enabled>
+        </fixedpoint>
+      </toolbox>
+      <toolbox>
+        <embeddedcoder>
+          <enabled>true</enabled>
+        </embeddedcoder>
+      </toolbox>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>false</unix>
+      <mac>false</mac>
+      <windows>true</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>6.2</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>win64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>

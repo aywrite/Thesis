@@ -1,0 +1,131 @@
+<deployment-project plugin="plugin.ezdeploy" plugin-version="1.0">
+  <configuration build-checksum="2227074343" file="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids.prj" location="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim" name="StandaloneBoids" preferred-package-location="C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_redistribution" preferred-package-type="package.type.exe" target="target.ezdeploy.standalone" target-name="MATLAB Compiler for Standalone Applications">
+    <param.appname>StandaloneBoids</param.appname>
+    <param.icon />
+    <param.icons />
+    <param.version>1.0</param.version>
+    <param.authnamewatermark>Andrew Wright</param.authnamewatermark>
+    <param.email>z3373086@zmail.unsw.edu.au</param.email>
+    <param.company>UNSW</param.company>
+    <param.summary>Multi-Agent Bird like simulator 0.1 prealpha</param.summary>
+    <param.description />
+    <param.screenshot />
+    <param.guid />
+    <param.installpath.string>\UNSW\StandaloneBoids\</param.installpath.string>
+    <param.installpath.combo>option.installpath.programfiles</param.installpath.combo>
+    <param.logo />
+    <param.install.notes />
+    <param.intermediate>${PROJECT_ROOT}\StandaloneBoids\for_testing</param.intermediate>
+    <param.files.only>${PROJECT_ROOT}\StandaloneBoids\for_redistribution_files_only</param.files.only>
+    <param.output>${PROJECT_ROOT}\StandaloneBoids\for_redistribution</param.output>
+    <param.enable.clean.build>false</param.enable.clean.build>
+    <param.user.defined.mcr.options />
+    <param.embed.ctf>true</param.embed.ctf>
+    <param.server.ctf>${PROJECT_ROOT}\StandaloneBoids\for_testing\.ctf</param.server.ctf>
+    <param.server.readme>${PROJECT_ROOT}\StandaloneBoids\for_testing\readme.txt</param.server.readme>
+    <param.target.type>subtarget.standalone</param.target.type>
+    <param.support.packages />
+    <param.required.mcr.products>
+      <item>35000</item>
+      <item>35001</item>
+    </param.required.mcr.products>
+    <param.web.mcr>true</param.web.mcr>
+    <param.package.mcr>false</param.package.mcr>
+    <param.no.mcr>false</param.no.mcr>
+    <param.web.mcr.name>MyAppInstaller_web</param.web.mcr.name>
+    <param.package.mcr.name>MyAppInstaller_mcr</param.package.mcr.name>
+    <param.no.mcr.name>MyAppInstaller_app</param.no.mcr.name>
+    <param.windows.command.prompt>true</param.windows.command.prompt>
+    <param.create.log>false</param.create.log>
+    <param.log.file />
+    <unset>
+      <param.icon />
+      <param.icons />
+      <param.version />
+      <param.description />
+      <param.screenshot />
+      <param.guid />
+      <param.installpath.string />
+      <param.installpath.combo />
+      <param.logo />
+      <param.install.notes />
+      <param.intermediate />
+      <param.files.only />
+      <param.output />
+      <param.enable.clean.build />
+      <param.user.defined.mcr.options />
+      <param.embed.ctf />
+      <param.server.ctf />
+      <param.server.readme />
+      <param.target.type />
+      <param.support.packages />
+      <param.web.mcr />
+      <param.package.mcr />
+      <param.no.mcr />
+      <param.web.mcr.name />
+      <param.package.mcr.name />
+      <param.no.mcr.name />
+      <param.windows.command.prompt />
+      <param.create.log />
+      <param.log.file />
+    </unset>
+    <fileset.main>
+      <file>${PROJECT_ROOT}\boid.m</file>
+    </fileset.main>
+    <fileset.resources>
+      <file>${PROJECT_ROOT}\checkPosition.m</file>
+      <file>${PROJECT_ROOT}\combineAccelerationsCPU.m</file>
+      <file>${PROJECT_ROOT}\combineAccelerationsGPU.m</file>
+      <file>${PROJECT_ROOT}\GetAccelerationCPU.m</file>
+      <file>${PROJECT_ROOT}\GetAccelerationGPU.m</file>
+      <file>${PROJECT_ROOT}\safteyRDivide.m</file>
+      <file>${PROJECT_ROOT}\scaleMatrix.m</file>
+      <file>${PROJECT_ROOT}\updateForTime.m</file>
+    </fileset.resources>
+    <fileset.package />
+    <build-deliverables>
+      <file location="${PROJECT_ROOT}\StandaloneBoids\for_testing" name="readme.txt" optional="true">C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\readme.txt</file>
+      <file location="${PROJECT_ROOT}\StandaloneBoids\for_testing" name="StandaloneBoids.exe" optional="false">C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\StandaloneBoids.exe</file>
+      <file location="${PROJECT_ROOT}\StandaloneBoids\for_testing" name="splash.png" optional="false">C:\Users\Andrew\Documents\GitHub\Thesis\BoidsSim\StandaloneBoids\for_testing\splash.png</file>
+    </build-deliverables>
+    <workflow />
+    <matlab>
+      <root>D:\Program Files\MATLAB\R2014b</root>
+      <toolboxes>
+        <toolbox name="fixedpoint" />
+        <toolbox name="embeddedcoder" />
+        <toolbox name="matlabcoder" />
+      </toolboxes>
+      <toolbox>
+        <fixedpoint>
+          <enabled>true</enabled>
+        </fixedpoint>
+      </toolbox>
+      <toolbox>
+        <embeddedcoder>
+          <enabled>true</enabled>
+        </embeddedcoder>
+      </toolbox>
+      <toolbox>
+        <matlabcoder>
+          <enabled>true</enabled>
+        </matlabcoder>
+      </toolbox>
+    </matlab>
+    <platform>
+      <unix>false</unix>
+      <mac>false</mac>
+      <windows>true</windows>
+      <win2k>false</win2k>
+      <winxp>false</winxp>
+      <vista>false</vista>
+      <linux>false</linux>
+      <solaris>false</solaris>
+      <osver>6.2</osver>
+      <os32>false</os32>
+      <os64>true</os64>
+      <arch>win64</arch>
+      <matlab>true</matlab>
+    </platform>
+  </configuration>
+</deployment-project>
