@@ -1,4 +1,4 @@
-function [NewPosition] = checkPosition(x)
+ function [UpdatedPosition] = checkPosition(x)
 %This function checks if the boids go out of bounds, if so they wrap aroud
 %   Detailed explanation goes here
 %import global variables
@@ -13,7 +13,7 @@ global zmax;
 NewPosition = zeros(N, 3);
 %loop through all boids and check they are in bounds
 for i=1:N
-   position = x(i, :);
+   position = [x.x(i), x.y(i), x.z(i)];
    if position(1) > xmax
       position(1) = xmin+(position(1)-xmax); 
    end
@@ -38,6 +38,8 @@ for i=1:N
    NewPosition(i, 2) = position(2);
    NewPosition(i, 3) = position(3);
 end
-
+UpdatedPosition.x = NewPosition(:, 1);
+UpdatedPosition.y = NewPosition(:, 2);
+UpdatedPosition.z = NewPosition(:, 3);
 end
 

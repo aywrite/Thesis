@@ -1,6 +1,4 @@
 function [c] = safteyRDivide(a, b)
-if b == 0
-    b=0.001;
-end
+b = b+eps;
 c = rdivide(a, b); 
 end
