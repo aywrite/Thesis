@@ -13,7 +13,7 @@ global ymax;
 global zmin;
 global zmax;
 
-Endtime = 100; %Endtime
+Endtime = 500; %Endtime
 delta = 0.1; %time step size
 TimeSteps = Endtime/delta; %noTimeSteps
 DisplayWorld = false;
@@ -21,7 +21,7 @@ useGPU = false;
 
 %%Generate the Agents
 %Generate N entities with random locations and velocities
-N = 200;   %Number of entities
+N = 20;   %Number of entities
 X = 90;     %Distance Spread
 V = 3;      %Velocity Spread
  
