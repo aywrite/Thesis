@@ -1,4 +1,4 @@
-tarfunction timeToCompute = boid(Endtime, delta, n, DisplayWorld, maxVal)
+function timeToCompute = boid2(Endtime, delta, n, DisplayWorld, maxVal)
 %This script runs a multi-agent simulation
 %%Setup up the enviroment
 %reset local and GPU Memory
@@ -58,9 +58,9 @@ for k=0:TimeSteps
     
     %function to get a
     if useGPU == true
-        acceleration = GetAccelerationGPU(position, velocity);
+        acceleration = GetAcceleration(position, velocity);
     else
-       acceleration = GetAccelerationCPU(position, velocity); 
+       acceleration = GetAcceleration(position, velocity); 
     end
 
     %calculate new positions etc

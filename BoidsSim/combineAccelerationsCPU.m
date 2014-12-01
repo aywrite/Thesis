@@ -19,7 +19,7 @@ clear normA1
 %A2
 normA2 = sqrt(A2(:,1,:).^2 + A2(:,2,:).^2 + A2(:,3,:).^2);
 normA = sqrt(A(:,1,:).^2 + A(:,2,:).^2 + A(:,3,:).^2);
-temp = (normA+normA2) > Amax;
+temp = (normA+normA2) > Amax; 
 tempA2 = relFactor*bsxfun(@times, bsxfun(@safteyRDivide, A2, normA2), (Amax-normA));
 A = A + bsxfun(@times, tempA2, temp) + bsxfun(@times, A2, not(temp));
 clear temp

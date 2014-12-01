@@ -1,4 +1,4 @@
-function [a] = GetAcceleration(x, v)
+function [a] = GetAcceleration(xs, vs)
 
 global N;
 c1=0.3;
@@ -10,6 +10,9 @@ a1=zeros(N, 3);
 a2=zeros(N ,3);
 a3=zeros(N, 3);
 a4=zeros(N, 3);
+
+x = [xs.x, xs.y, xs.z];
+v= [vs.x, vs.y, vs.z];
 
 for n=1:N
     for m=1:N
@@ -25,6 +28,9 @@ for n=1:N
     end
 end
 
-a = a1+a2+a3+a4;
+b = a1+a2+a3+a4;
+a.x = b(:,1);
+a.y = b(:,2);
+a.z = b(:,3);
 end
 
