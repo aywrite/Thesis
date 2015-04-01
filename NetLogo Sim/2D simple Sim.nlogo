@@ -21,14 +21,28 @@ breed [searchers searcher]
 turtles-own [
   flockmates         ;; agentset of nearby turtles
   nearest-neighbor   ;; closest one of our flockmates
+  tVision
+  tMinimumSeparation
+  tMaxAlignTurn
+  tMaxCohereTurn
+  tMaxSeparateTurn
+  tMoveDistance
+]
+
+patches-own [
+ odds 
 ]
 
 globals [
   backgroundColor
   victimColor
   searcherColor
+  buildingColor
   noSearchers
   noVictims
+  tickLength
+  Speed
+  smoothingFactor
 ]
 
 to Setup
@@ -37,14 +51,19 @@ to Setup
   reset-ticks
   reset-perspective
   ;initialise Globals
-  set backgroundColor blue
-  set victimColor black
-  set searcherColor orange
-  set noSearchers 50
+  set tickLength 0.2
+  set backgroundColor white
+  set victimColor red
+  set searcherColor blue
+  set buildingColor black
+  set noSearchers 25
   set noVictims 5
-  
+  set Speed 1
+  set smoothingFactor 1
+
   ;initialise world
   ask patches [set pcolor backgroundColor]
+  build-rubble
   ;Generate Victim Patches
   let counteri 0
   while [counteri < noVictims] [
@@ -57,7 +76,15 @@ to Setup
        ]
   ]
   ;Create Searcher Turtles
-  create-searchers  noSearchers [set color searcherColor]
+  create-searchers  noSearchers [
+    set tVision vision
+    set tMinimumSeparation minimum-separation
+    set tMaxAlignTurn (max-align-turn * tickLength)
+    set tMaxCohereTurn (max-cohere-turn * tickLength)
+    set tMaxSeparateTurn (max-separate-turn * tickLength)
+    set tMoveDistance ((Speed) * tickLength)  
+    set color searcherColor
+  ]
 end
 
 
@@ -65,12 +92,27 @@ to go
   ask turtles [ flock ]
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
-  repeat 5 [ ask turtles [ fd 0.2 ] display ]
+  repeat smoothingFactor [ ask turtles [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
   ;; for greater efficiency, at the expense of smooth
   ;; animation, substitute the following line instead:
   ;;   ask turtles [ fd 1 ]
   tick 
 end
+
+
+to build-rubble
+  let xrand round random-normal 0 6
+  let yrand round random-normal 0 4
+  ask patches [
+    ifelse density = 0 [set odds 10000000][set odds ((1 / (density / 2)) * 100)]
+
+    if (random odds = 0) [ 
+      set pcolor buildingColor 
+    ]
+  ]
+end
+
+
 
 
 
@@ -84,14 +126,14 @@ to flock  ;; turtle procedure
   find-flockmates
   if any? flockmates
     [ find-nearest-neighbor
-      ifelse distance nearest-neighbor < minimum-separation
+      ifelse distance nearest-neighbor < tMinimumSeparation
         [ separate ]
         [ align
           cohere ] ]
 end
 
 to find-flockmates  ;; turtle procedure
-  set flockmates other turtles in-radius vision
+  set flockmates other turtles in-radius tVision
 end
 
 to find-nearest-neighbor ;; turtle procedure
@@ -101,13 +143,13 @@ end
 ;;; SEPARATE
 
 to separate  ;; turtle procedure
-  turn-away ([heading] of nearest-neighbor) max-separate-turn
+  turn-away ([heading] of nearest-neighbor) tMaxSeparateTurn
 end
 
 ;;; ALIGN
 
 to align  ;; turtle procedure
-  turn-towards average-flockmate-heading max-align-turn
+  turn-towards average-flockmate-heading tMaxAlignTurn
 end
 
 to-report average-flockmate-heading  ;; turtle procedure
@@ -124,7 +166,7 @@ end
 ;;; COHERE
 
 to cohere  ;; turtle procedure
-  turn-towards average-heading-towards-flockmates max-cohere-turn
+  turn-towards average-heading-towards-flockmates tMaxCohereTurn
 end
 
 to-report average-heading-towards-flockmates  ;; turtle procedure
@@ -167,10 +209,10 @@ end
 GRAPHICS-WINDOW
 23
 10
-462
-470
-16
-16
+566
+574
+20
+20
 13.0
 1
 10
@@ -181,10 +223,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--16
-16
--16
-16
+-20
+20
+-20
+20
 0
 0
 1
@@ -234,7 +276,7 @@ population
 population
 0
 100
-50
+52
 1
 1
 NIL
@@ -313,6 +355,21 @@ max-separate-turn
 0.5
 1
 degrees
+HORIZONTAL
+
+SLIDER
+914
+324
+1086
+357
+Density
+Density
+0
+100
+22.3
+0.1
+1
+%
 HORIZONTAL
 
 @#$#@#$#@
