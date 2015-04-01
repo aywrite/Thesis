@@ -27,6 +27,8 @@ turtles-own [
   tMaxCohereTurn
   tMaxSeparateTurn
   tMoveDistance
+  tCollisionDistance
+  
 ]
 
 patches-own [
@@ -43,6 +45,11 @@ globals [
   tickLength
   Speed
   smoothingFactor
+  visionAngle
+  turtleColision
+  DONORMAL
+  RIGHTTURN
+  LEFTTURN
 ]
 
 to Setup
@@ -56,11 +63,18 @@ to Setup
   set victimColor red
   set searcherColor blue
   set buildingColor black
-  set noSearchers 25
+  set noSearchers 55
   set noVictims 5
   set Speed 1
   set smoothingFactor 1
-
+  set visionAngle 30
+  set turtleColision FALSE
+  
+  ;Dummy Variables
+  set DONORMAL 1374
+  set RIGHTTURN 2349
+  set LEFTTURN 9584  
+  
   ;initialise world
   ask patches [set pcolor backgroundColor]
   build-rubble
@@ -78,6 +92,7 @@ to Setup
   ;Create Searcher Turtles
   create-searchers  noSearchers [
     set tVision vision
+    set tCollisionDistance (vision / 2)
     set tMinimumSeparation minimum-separation
     set tMaxAlignTurn (max-align-turn * tickLength)
     set tMaxCohereTurn (max-cohere-turn * tickLength)
@@ -89,7 +104,7 @@ end
 
 
 to go
-  ask turtles [ flock ]
+  ask turtles [ifelse (doPath = DONORMAL) [flock][avoidCollision]]
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
   repeat smoothingFactor [ ask turtles [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
@@ -113,7 +128,37 @@ to build-rubble
 end
 
 
-
+to-report doPath
+  ;initalise temp variables
+  let blocked FALSE
+  let lblocked FALSE
+  let rblocked FALSE
+  let reportValue 9985
+  let target-patch1 patch-ahead tCollisionDistance
+  ;check what is ahead of the turtles path
+  if target-patch1 = nobody or [pcolor] of target-patch1 = buildingColor or (count turtles-on target-patch1 > 0 and turtleColision = TRUE) [
+    set blocked TRUE
+  ]
+  let target-patch2 patch-right-and-ahead visionAngle tCollisionDistance
+  if target-patch2 = nobody or [pcolor] of target-patch2 = buildingColor or (count turtles-on target-patch2 > 0 and turtleColision = TRUE)[
+    set rblocked TRUE
+  ]
+  let target-patch3 patch-left-and-ahead visionAngle tCollisionDistance
+  if target-patch3 = nobody or [pcolor] of target-patch3 = buildingColor or (count turtles-on target-patch3 > 0 and turtleColision = TRUE)[
+    set lblocked TRUE
+  ]
+  ;decide on the best course of action
+  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = TRUE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
+  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = FALSE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
+  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = TRUE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
+  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
+  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = TRUE)) [set reportValue RIGHTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = FALSE) and (lblocked = TRUE)) [set reportValue RIGHTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = FALSE) and (lblocked = FALSE)) [set reportValue DONORMAL][show "ERROR" show reportValue stop] ]]]]]]]
+  ;report the best course of action
+  report reportValue
+end
 
 
 ;-------- The following portion of Code is taken from: --------
@@ -130,6 +175,7 @@ to flock  ;; turtle procedure
         [ separate ]
         [ align
           cohere ] ]
+
 end
 
 to find-flockmates  ;; turtle procedure
@@ -138,6 +184,13 @@ end
 
 to find-nearest-neighbor ;; turtle procedure
   set nearest-neighbor min-one-of flockmates [distance myself]
+end
+
+
+;;; NONCOLLIDE
+
+to avoidCollision ;;turtle procedure
+    left 30
 end
 
 ;;; SEPARATE
@@ -351,7 +404,7 @@ max-separate-turn
 max-separate-turn
 0
 20
-1.5
+3
 0.5
 1
 degrees
@@ -366,7 +419,7 @@ Density
 Density
 0
 100
-22.3
+3.2
 0.1
 1
 %
