@@ -28,6 +28,8 @@ turtles-own [
   tMaxSeparateTurn
   tMoveDistance
   tCollisionDistance
+  tDefaultTurn
+  tPatchCount
   
 ]
 
@@ -47,6 +49,7 @@ globals [
   smoothingFactor
   visionAngle
   turtleColision
+  visitedColor
   DONORMAL
   RIGHTTURN
   LEFTTURN
@@ -63,11 +66,12 @@ to Setup
   set victimColor red
   set searcherColor blue
   set buildingColor black
-  set noSearchers 55
-  set noVictims 5
+  set visitedColor grey
+  set noSearchers population
+  set noVictims 0
   set Speed 1
   set smoothingFactor 1
-  set visionAngle 30
+  set visionAngle 20
   set turtleColision FALSE
   
   ;Dummy Variables
@@ -99,15 +103,23 @@ to Setup
     set tMaxSeparateTurn (max-separate-turn * tickLength)
     set tMoveDistance ((Speed) * tickLength)  
     set color searcherColor
+    ifelse random 2 = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ]
 end
 
 
 to go
-  ask turtles [ifelse (doPath = DONORMAL) [flock][avoidCollision]]
+  ask turtles [
+    let action doPath
+    ifelse (action = DONORMAL) [flock] [
+    ifelse (action = RIGHTTURN) [right tMaxSeparateTurn] [
+    ifelse (action = LEFTTURN) [left tMaxSeparateTurn]
+    [show "ERROR" show doPATH stop]]]
+  ]
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
   repeat smoothingFactor [ ask turtles [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
+  ask searchers [if (pcolor = backgroundColor) [set pcolor visitedColor set tPatchCount (tPatchCount + 1)]]
   ;; for greater efficiency, at the expense of smooth
   ;; animation, substitute the following line instead:
   ;;   ask turtles [ fd 1 ]
@@ -134,8 +146,9 @@ to-report doPath
   let lblocked FALSE
   let rblocked FALSE
   let reportValue 9985
-  let target-patch1 patch-ahead tCollisionDistance
+  
   ;check what is ahead of the turtles path
+  let target-patch1 patch-ahead tCollisionDistance
   if target-patch1 = nobody or [pcolor] of target-patch1 = buildingColor or (count turtles-on target-patch1 > 0 and turtleColision = TRUE) [
     set blocked TRUE
   ]
@@ -147,10 +160,11 @@ to-report doPath
   if target-patch3 = nobody or [pcolor] of target-patch3 = buildingColor or (count turtles-on target-patch3 > 0 and turtleColision = TRUE)[
     set lblocked TRUE
   ]
+  
   ;decide on the best course of action
-  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = TRUE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
-  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = FALSE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
-  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = TRUE)) [ifelse (random 2 = 0)[set reportValue LEFTTURN][set reportValue RIGHTTURN]] [
+  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = TRUE)) [set reportValue tDefaultTurn] [
+  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = FALSE)) [set reportValue tDefaultTurn] [
+  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = TRUE)) [set reportValue tDefaultTurn] [
   ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
   ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = TRUE)) [set reportValue RIGHTTURN] [
   ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
@@ -329,7 +343,7 @@ population
 population
 0
 100
-52
+46
 1
 1
 NIL
@@ -404,7 +418,7 @@ max-separate-turn
 max-separate-turn
 0
 20
-3
+17
 0.5
 1
 degrees
@@ -419,7 +433,7 @@ Density
 Density
 0
 100
-3.2
+51
 0.1
 1
 %
