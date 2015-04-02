@@ -61,17 +61,17 @@ to Setup
   reset-ticks
   reset-perspective
   ;initialise Globals
-  set tickLength 0.2
+  set tickLength 0.1
   set backgroundColor white
   set victimColor red
   set searcherColor blue
   set buildingColor black
-  set visitedColor grey
+  set visitedColor [230 230 230]
   set noSearchers population
   set noVictims 0
-  set Speed 1
+  set Speed 0.5
   set smoothingFactor 1
-  set visionAngle 20
+  set visionAngle 30
   set turtleColision FALSE
   
   ;Dummy Variables
@@ -111,9 +111,18 @@ end
 to go
   ask turtles [
     let action doPath
-    ifelse (action = DONORMAL) [flock] [
-    ifelse (action = RIGHTTURN) [right tMaxSeparateTurn] [
-    ifelse (action = LEFTTURN) [left tMaxSeparateTurn]
+    ifelse (action = DONORMAL) [
+      flock 
+      ;if (tMoveDistance < ((Speed) * tickLength)) [set tMoveDistance (tMoveDistance + (0.1 * Speed * tickLength * tickLength))]
+      ] [
+    ifelse (action = RIGHTTURN) [
+      right tMaxSeparateTurn 
+      ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
+      ] [
+    ifelse (action = LEFTTURN) [
+      left tMaxSeparateTurn 
+      ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
+      ]
     [show "ERROR" show doPATH stop]]]
   ]
   ;; the following line is used to make the turtles
@@ -179,7 +188,7 @@ end
 ;Wilensky, U. (1998). NetLogo Flocking model. 
 ;http://ccl.northwestern.edu/netlogo/models/Flocking. 
 ;Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
-;It and any code inconjunction must be licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
+;It and any code in conjunction must be licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
 ;-------- -------------------------------------------- --------
 to flock  ;; turtle procedure
   find-flockmates
@@ -198,13 +207,6 @@ end
 
 to find-nearest-neighbor ;; turtle procedure
   set nearest-neighbor min-one-of flockmates [distance myself]
-end
-
-
-;;; NONCOLLIDE
-
-to avoidCollision ;;turtle procedure
-    left 30
 end
 
 ;;; SEPARATE
@@ -270,7 +272,7 @@ end
 ;Wilensky, U. (1998). NetLogo Flocking model. 
 ;http://ccl.northwestern.edu/netlogo/models/Flocking. 
 ;Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
-;It and any code inconjunction must be licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
+;It and any code in conjunction must be licensed under Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License
 ;-------- ---------------------------------------- --------
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -418,7 +420,7 @@ max-separate-turn
 max-separate-turn
 0
 20
-17
+5
 0.5
 1
 degrees
@@ -433,7 +435,7 @@ Density
 Density
 0
 100
-51
+0
 0.1
 1
 %
