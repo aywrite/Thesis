@@ -30,6 +30,8 @@ turtles-own [
   tCollisionDistance
   tDefaultTurn
   tPatchCount
+  tToDie
+  tGeneticCode
   
 ]
 
@@ -38,18 +40,24 @@ patches-own [
 ]
 
 globals [
+  ;colours 9NB spelling is american as this is a code base
   backgroundColor
   victimColor
   searcherColor
   buildingColor
+  visitedColor
+  
   noSearchers
   noVictims
   tickLength
   Speed
   smoothingFactor
+  
   visionAngle
   turtleColision
-  visitedColor
+  turtleDeath
+  
+  ;Reporter Values
   DONORMAL
   RIGHTTURN
   LEFTTURN
@@ -73,6 +81,7 @@ to Setup
   set smoothingFactor 1
   set visionAngle 30
   set turtleColision FALSE
+  set turtleDeath TRUE
   
   ;Dummy Variables
   set DONORMAL 1374
@@ -96,12 +105,13 @@ to Setup
   ;Create Searcher Turtles
   create-searchers  noSearchers [
     set tVision vision
-    set tCollisionDistance (vision / 2)
+    set tCollisionDistance (vision)
     set tMinimumSeparation minimum-separation
     set tMaxAlignTurn (max-align-turn * tickLength)
     set tMaxCohereTurn (max-cohere-turn * tickLength)
     set tMaxSeparateTurn (max-separate-turn * tickLength)
-    set tMoveDistance ((Speed) * tickLength)  
+    set tMoveDistance ((Speed) * tickLength)
+    set tToDie FALSE  
     set color searcherColor
     ifelse random 2 = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ]
@@ -110,7 +120,18 @@ end
 
 to go
   ask turtles [
-    let action doPath
+    
+    ;check between the turtle and the turtles maximum collision detectance range
+    ;if there is nothing recommend continue as normal, otherwise recommend respond to the closest obstacle
+    let range 0
+    let action (doPath (range))
+    
+    while [range < tCollisionDistance and action = DONORMAL] [
+      set range (range + tMoveDistance)
+      set action doPath (range)
+    ]
+    
+    ;based on the recommended action, respond accordingly
     ifelse (action = DONORMAL) [
       flock 
       ;if (tMoveDistance < ((Speed) * tickLength)) [set tMoveDistance (tMoveDistance + (0.1 * Speed * tickLength * tickLength))]
@@ -123,12 +144,22 @@ to go
       left tMaxSeparateTurn 
       ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
       ]
-    [show "ERROR" show doPATH stop]]]
+    [show "ERROR" show action stop]]]
   ]
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
   repeat smoothingFactor [ ask turtles [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
   ask searchers [if (pcolor = backgroundColor) [set pcolor visitedColor set tPatchCount (tPatchCount + 1)]]
+  
+  ;if enabled kill any turtles which have collided
+  ask searchers [
+    if (turtleDeath = TRUE) [
+      if (pcolor = buildingColor) [set tToDie TRUE]
+      if (turtleColision = TRUE and count other turtles-on patch-here > 0) [set tToDie TRUE]
+    ]
+  ]
+  ask searchers [if (tToDie = TRUE) [die]]
+      
   ;; for greater efficiency, at the expense of smooth
   ;; animation, substitute the following line instead:
   ;;   ask turtles [ fd 1 ]
@@ -149,7 +180,7 @@ to build-rubble
 end
 
 
-to-report doPath
+to-report doPath [checkRange]
   ;initalise temp variables
   let blocked FALSE
   let lblocked FALSE
@@ -157,16 +188,16 @@ to-report doPath
   let reportValue 9985
   
   ;check what is ahead of the turtles path
-  let target-patch1 patch-ahead tCollisionDistance
-  if target-patch1 = nobody or [pcolor] of target-patch1 = buildingColor or (count turtles-on target-patch1 > 0 and turtleColision = TRUE) [
+  let target-patch1 patch-ahead checkRange
+  if target-patch1 = nobody or [pcolor] of target-patch1 = buildingColor or (count other turtles-on target-patch1 > 0 and turtleColision = TRUE) [
     set blocked TRUE
   ]
-  let target-patch2 patch-right-and-ahead visionAngle tCollisionDistance
-  if target-patch2 = nobody or [pcolor] of target-patch2 = buildingColor or (count turtles-on target-patch2 > 0 and turtleColision = TRUE)[
+  let target-patch2 patch-right-and-ahead visionAngle checkRange
+  if target-patch2 = nobody or [pcolor] of target-patch2 = buildingColor or (count other turtles-on target-patch2 > 0 and turtleColision = TRUE)[
     set rblocked TRUE
   ]
-  let target-patch3 patch-left-and-ahead visionAngle tCollisionDistance
-  if target-patch3 = nobody or [pcolor] of target-patch3 = buildingColor or (count turtles-on target-patch3 > 0 and turtleColision = TRUE)[
+  let target-patch3 patch-left-and-ahead visionAngle checkRange
+  if target-patch3 = nobody or [pcolor] of target-patch3 = buildingColor or (count other turtles-on target-patch3 > 0 and turtleColision = TRUE)[
     set lblocked TRUE
   ]
   
@@ -278,10 +309,10 @@ end
 GRAPHICS-WINDOW
 23
 10
-566
-574
-20
-20
+696
+704
+25
+25
 13.0
 1
 10
@@ -292,12 +323,12 @@ GRAPHICS-WINDOW
 1
 1
 1
--20
-20
--20
-20
-0
-0
+-25
+25
+-25
+25
+1
+1
 1
 ticks
 30.0
@@ -360,7 +391,7 @@ vision
 vision
 0
 10
-3
+6
 1
 1
 NIL
@@ -420,7 +451,7 @@ max-separate-turn
 max-separate-turn
 0
 20
-5
+7
 0.5
 1
 degrees
@@ -435,11 +466,40 @@ Density
 Density
 0
 100
-0
+5.1
 0.1
 1
 %
 HORIZONTAL
+
+MONITOR
+1104
+84
+1185
+129
+Alive Turtles
+count searchers
+0
+1
+11
+
+PLOT
+1246
+98
+1446
+248
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot count turtles"
 
 @#$#@#$#@
 ## WHAT IS IT?
