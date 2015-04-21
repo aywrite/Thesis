@@ -115,6 +115,46 @@ to Setup
     set color searcherColor
     ifelse random 2 = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ]
+  
+  ask searchers [
+   set tGeneticCode [
+     [0 0 1 0];tVision (0-10)
+     [0 0 1 0];tCollisionDistance (0-10)
+     [0 0 0 1];tMinimumSeperation (0-20)
+     [0 1 1 1];MaxAlignTurn (0-30)
+     [0 0 1 0];tMaxCohereTurn (0-30)
+     [0 1 0 0];tMaxSeparateTurn (0-30)
+   ] 
+  ]
+  
+  ask searchers [extractDNA]
+end
+
+to extractDNA
+  ;let binaryCode []
+  let decCode []
+  let i 0
+  while [i < length tGeneticCode] [
+    let subBinaryCode []
+    let decTotal 0
+    set subBinaryCode (lput (first (item i tGeneticCode)) subBinaryCode)
+    set decTotal (decTotal + (2 ^ (length (item i tGeneticCode) - 1) * first subBinaryCode))
+    
+    let j 1
+    while [j < length (item i tGeneticCode)] [
+      let Gcurrent item j (item i tGeneticCode)
+      let Bprevious item (j - 1) subBinaryCode
+      ifelse (Gcurrent + Bprevious) = 2[set subBinaryCode lput 0 subBinaryCode][set subBinaryCode lput (Gcurrent + Bprevious) subBinaryCode]
+      set decTotal (decTotal + (2 ^ (length (item i tGeneticCode) - j - 1) * item j subBinaryCode))
+      set j (j + 1)  
+    ]
+    ;set binaryCode lput subBinaryCode binaryCode
+    set decCode lput decTotal decCode
+    set i (i + 1)
+    
+  ]
+  ;show binaryCode
+  show decCode
 end
 
 
