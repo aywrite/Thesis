@@ -31,8 +31,9 @@ turtles-own [
   tDefaultTurn
   tPatchCount
   tToDie
+  tFitness
   tGeneticCode
-  
+  tNewGeneticCode
 ]
 
 patches-own [
@@ -40,7 +41,7 @@ patches-own [
 ]
 
 globals [
-  ;colours 9NB spelling is american as this is a code base
+  ;colours NB spelling is american as this is a code base
   backgroundColor
   victimColor
   searcherColor
@@ -56,6 +57,7 @@ globals [
   visionAngle
   turtleColision
   turtleDeath
+  debug
   
   ;Reporter Values
   DONORMAL
@@ -66,7 +68,7 @@ globals [
 to Setup
   ;reset the state, time and view
   clear-all
-  reset-ticks
+
   reset-perspective
   ;initialise Globals
   set tickLength 0.1
@@ -81,9 +83,10 @@ to Setup
   set smoothingFactor 1
   set visionAngle 30
   set turtleColision FALSE
-  set turtleDeath TRUE
+  set turtleDeath FALSE
+  set debug FALSE
   
-  ;Dummy Variables
+  ;Reporter Values, using Dummy Values
   set DONORMAL 1374
   set RIGHTTURN 2349
   set LEFTTURN 9584  
@@ -104,63 +107,35 @@ to Setup
   ]
   ;Create Searcher Turtles
   create-searchers  noSearchers [
-    set tVision vision
-    set tCollisionDistance (vision)
-    set tMinimumSeparation minimum-separation
-    set tMaxAlignTurn (max-align-turn * tickLength)
-    set tMaxCohereTurn (max-cohere-turn * tickLength)
-    set tMaxSeparateTurn (max-separate-turn * tickLength)
-    set tMoveDistance ((Speed) * tickLength)
-    set tToDie FALSE  
+    setxy random-xcor random-ycor
+    set tToDie 0  
     set color searcherColor
-    ifelse random 2 = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ]
   
   ask searchers [
-   set tGeneticCode [
-     [0 0 1 0];tVision (0-10)
-     [0 0 1 0];tCollisionDistance (0-10)
-     [0 0 0 1];tMinimumSeperation (0-20)
-     [0 1 1 1];MaxAlignTurn (0-30)
-     [0 0 1 0];tMaxCohereTurn (0-30)
-     [0 1 0 0];tMaxSeparateTurn (0-30)
-   ] 
+   set tGeneticCode (list
+     (n-values 3 [random 2]);tVision (0-10)
+     (n-values 3 [random 2]);tCollisionDistance (0-10)
+     (n-values 2 [random 2]);tMinimumSeperation (0-20)
+     (n-values 5 [random 2]);MaxAlignTurn (0-30)
+     (n-values 5 [random 2]);tMaxCohereTurn (0-30)
+     (n-values 5 [random 2]);tMaxSeparateTurn (0-30)
+     (n-values 2 [random 2]);tMoveDistance (0-3)
+     (n-values 1 [random 2]);tDefaultTurn
+   ) 
   ]
   
-  ask searchers [extractDNA]
+  ask searchers [extractDNA (tGeneticCode)]
+  reset-ticks
 end
 
-to extractDNA
-  ;let binaryCode []
-  let decCode []
-  let i 0
-  while [i < length tGeneticCode] [
-    let subBinaryCode []
-    let decTotal 0
-    set subBinaryCode (lput (first (item i tGeneticCode)) subBinaryCode)
-    set decTotal (decTotal + (2 ^ (length (item i tGeneticCode) - 1) * first subBinaryCode))
-    
-    let j 1
-    while [j < length (item i tGeneticCode)] [
-      let Gcurrent item j (item i tGeneticCode)
-      let Bprevious item (j - 1) subBinaryCode
-      ifelse (Gcurrent + Bprevious) = 2[set subBinaryCode lput 0 subBinaryCode][set subBinaryCode lput (Gcurrent + Bprevious) subBinaryCode]
-      set decTotal (decTotal + (2 ^ (length (item i tGeneticCode) - j - 1) * item j subBinaryCode))
-      set j (j + 1)  
-    ]
-    ;set binaryCode lput subBinaryCode binaryCode
-    set decCode lput decTotal decCode
-    set i (i + 1)
-    
-  ]
-  ;show binaryCode
-  show decCode
-end
+
+
+
 
 
 to go
   ask turtles [
-    
     ;check between the turtle and the turtles maximum collision detectance range
     ;if there is nothing recommend continue as normal, otherwise recommend respond to the closest obstacle
     let range 0
@@ -193,19 +168,64 @@ to go
   
   ;if enabled kill any turtles which have collided
   ask searchers [
-    if (turtleDeath = TRUE) [
-      if (pcolor = buildingColor) [set tToDie TRUE]
-      if (turtleColision = TRUE and count other turtles-on patch-here > 0) [set tToDie TRUE]
-    ]
+    if (pcolor = buildingColor) [set tToDie (tToDie + 1)]
+    if (turtleColision = TRUE and count other turtles-on patch-here > 0) [set tToDie (tToDie + 1)]
   ]
-  ask searchers [if (tToDie = TRUE) [die]]
-      
+  if (turtleDeath = TRUE) [ask searchers [if (tToDie > 50) [die]]]
+  if (ticks mod divisionRate = 0) [evolveCS]    
   ;; for greater efficiency, at the expense of smooth
   ;; animation, substitute the following line instead:
   ;;   ask turtles [ fd 1 ]
   tick 
 end
 
+to evolveCS
+  if (debug = TRUE) [show "evolve"]
+  ask searchers [calcFitness] ;calculate fitness
+  let agentsByFitness sort-on [tFitness] searchers ;sort the agents by fitness
+  show last agentsByFitness
+  ask last agentsByFitness [
+    set tNewGeneticCode [tGeneticCode] of first agentsByFitness
+    set tToDie [tToDie] of first agentsByFitness
+    mutate
+    extractDNA (tNewGeneticCode)
+  ]
+end
+
+to calcFitness
+  ;set tFitness (tPatchCount / (tToDie + 1))
+  set tFitness (tToDie)
+end
+
+to mutate 
+  let pGeneFlip 5
+  let GeneFlipCode (list
+    (n-values 3 [random pGeneFlip = 0]);tVision (0-10)
+    (n-values 3 [random pGeneFlip = 0]);tCollisionDistance (0-10)
+    (n-values 2 [random pGeneFlip = 0]);tMinimumSeperation (0-20)
+    (n-values 5 [random pGeneFlip = 0]);MaxAlignTurn (0-30)
+    (n-values 5 [random pGeneFlip = 0]);tMaxCohereTurn (0-30)
+    (n-values 5 [random pGeneFlip = 0]);tMaxSeparateTurn (0-30)
+    (n-values 2 [random pGeneFlip = 0]);tMoveDistance (0-3)
+    (n-values 1 [random pGeneFlip = 0]);tDefaultTurn
+    )
+  if length tNewGeneticCode != length GeneFlipCode [show "ERROR" stop]
+  let i 0
+  let imax length tNewGeneticCode - 1
+  while [i < imax] [
+    let j 0
+    let jmax length item i tNewGeneticCode - 1
+    while [j < jmax] [
+      if item j item i GeneFlipCode = TRUE [ 
+        let oldGene item i tNewGeneticCode
+        ifelse item j oldGene = 0 [set oldGene replace-item j oldGene 1][set OldGene replace-item j oldGene 0]
+        set tNewGeneticCode replace-item i tNewGeneticCode oldGene
+      ]
+      set j (j + 1)
+    ]
+    set i (i + 1)
+  ] 
+end
 
 to build-rubble
   let xrand round random-normal 0 6
@@ -254,6 +274,41 @@ to-report doPath [checkRange]
   report reportValue
 end
 
+
+to extractDNA [GeneticCode]
+  ;let binaryCode []
+  let decCode []
+  let i 0
+  while [i < length GeneticCode] [
+    let subBinaryCode []
+    let decTotal 0
+    set subBinaryCode (lput (first (item i GeneticCode)) subBinaryCode)
+    set decTotal (decTotal + (2 ^ (length (item i GeneticCode) - 1) * first subBinaryCode))
+    
+    let j 1
+    while [j < length (item i GeneticCode)] [
+      let Gcurrent item j (item i GeneticCode)
+      let Bprevious item (j - 1) subBinaryCode
+      ifelse (Gcurrent + Bprevious) = 2[set subBinaryCode lput 0 subBinaryCode][set subBinaryCode lput (Gcurrent + Bprevious) subBinaryCode]
+      set decTotal (decTotal + (2 ^ (length (item i GeneticCode) - j - 1) * item j subBinaryCode))
+      set j (j + 1)  
+    ]
+    ;set binaryCode lput subBinaryCode binaryCode
+    set decCode lput decTotal decCode
+    set i (i + 1)
+    
+  ]
+  ;show binaryCode
+  set tVision item 0 decCode
+  set tCollisionDistance item 1 decCode
+  set tMinimumSeparation item 2 decCode + 1
+  set tMaxAlignTurn (item 3 decCode * tickLength)
+  set tMaxCohereTurn (item 4 decCode * tickLength)
+  set tMaxSeparateTurn (item 5 decCode * tickLength)
+  set tMoveDistance (item 6 decCode * tickLength * 0.1 + 1 * tickLength)
+  ifelse item 7 decCode = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
+  ;show decCode
+end
 
 ;-------- The following portion of Code is taken from: --------
 ;Wilensky, U. (1998). NetLogo Flocking model. 
@@ -415,8 +470,8 @@ SLIDER
 population
 population
 0
-100
-46
+500
+25
 1
 1
 NIL
@@ -424,99 +479,24 @@ HORIZONTAL
 
 SLIDER
 912
-128
+125
 1084
-161
-vision
-vision
-0
-10
-6
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-913
-173
-1085
-206
-minimum-separation
-minimum-separation
-0
-20
-1
-1
-1
-NIL
-HORIZONTAL
-
-SLIDER
-913
-211
-1092
-244
-max-align-turn
-max-align-turn
-0
-20
-5
-1
-1
-degrees
-HORIZONTAL
-
-SLIDER
-913
-248
-1105
-281
-max-cohere-turn
-max-cohere-turn
-0
-20
-3
-0.5
-1
-degrees
-HORIZONTAL
-
-SLIDER
-913
-285
-1116
-318
-max-separate-turn
-max-separate-turn
-0
-20
-7
-0.5
-1
-degrees
-HORIZONTAL
-
-SLIDER
-914
-324
-1086
-357
+158
 Density
 Density
 0
 100
-5.1
+10.8
 0.1
 1
 %
 HORIZONTAL
 
 MONITOR
-1104
-84
-1185
-129
+1448
+116
+1529
+161
 Alive Turtles
 count searchers
 0
@@ -524,11 +504,11 @@ count searchers
 11
 
 PLOT
-1246
-98
-1446
-248
-plot 1
+1533
+12
+1733
+162
+Population
 NIL
 NIL
 0.0
@@ -540,6 +520,201 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot count turtles"
+
+PLOT
+720
+395
+920
+545
+Vision Distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "histogram [tVision] of Turtles"
+
+PLOT
+722
+553
+922
+703
+Average Vision Range
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [tVision] of Turtles"
+
+PLOT
+921
+395
+1121
+545
+Collision Distance Distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "histogram [tCollisionDistance] of searchers"
+
+PLOT
+1124
+395
+1324
+545
+Minimum Seperation Distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "histogram [tMinimumSeparation] of searchers"
+
+PLOT
+1329
+395
+1529
+545
+Max Separation Distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "histogram [tMaxSeparateTurn] of searchers"
+
+PLOT
+1534
+395
+1734
+545
+Move Distance Distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+2.0
+false
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "histogram [tMoveDistance] of searchers"
+
+PLOT
+927
+554
+1127
+704
+plot 2
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [tCollisionDistance] of searchers"
+
+PLOT
+1130
+553
+1330
+703
+plot 3
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [tMinimumSeparation] of searchers"
+
+PLOT
+1335
+555
+1535
+705
+plot 4
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [tMaxSeparateTurn] of searchers"
+
+PLOT
+1542
+556
+1742
+706
+plot 5
+NIL
+NIL
+0.0
+10.0
+0.0
+2.0
+false
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot mean [tMoveDistance] of searchers"
+
+SLIDER
+913
+160
+1085
+193
+divisionRate
+divisionRate
+100
+3000
+100
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -888,6 +1063,22 @@ NetLogo 5.1.0
 @#$#@#$#@
 @#$#@#$#@
 @#$#@#$#@
+<experiments>
+  <experiment name="experiment" repetitions="100" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>count searchers</metric>
+    <metric>mean [tCollisionDistance] of searchers</metric>
+    <metric>mean [tMoveDistance] of searchers</metric>
+    <metric>mean [tMaxSeparateTurn] of searchers</metric>
+    <metric>[tPatchCount] of searchers</metric>
+    <metric>[tGeneticCode] of searchers</metric>
+    <enumeratedValueSet variable="population">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="Density" first="5" step="5" last="50"/>
+  </experiment>
+</experiments>
 @#$#@#$#@
 @#$#@#$#@
 default
