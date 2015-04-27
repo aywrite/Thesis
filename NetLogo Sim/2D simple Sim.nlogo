@@ -17,6 +17,7 @@
 ;------------------------------------------------------------------------------
 
 breed [searchers searcher]
+breed [victims victim]
 
 turtles-own [
   flockmates         ;; agentset of nearby turtles
@@ -50,19 +51,25 @@ globals [
   buildingColor
   visitedColor
   
+  ;World Settings
+  ;World Size
+
+  
   noSearchers
-  noVictims
+  victimSize
+  searcherSize
+  searcherShape
+  victimShape
   tickLength
   Speed
   smoothingFactor
   
   visionAngle
-  turtleColision
   turtleDeath
   debug
   
   ;patchVariable
-  VisitTimerMax
+  VisitTimerMax ;Rename DecayRate, should this be turtle based?
   
   ;Reporter Values
   DONORMAL
@@ -79,6 +86,9 @@ globals [
   tMoveDistanceBitLength
   tCollisionDistanceBitLength
   tDefaultTurnBitLength
+  
+  driftTurn
+  driftMove
 ]
 
 to Setup
@@ -86,35 +96,45 @@ to Setup
   clear-all
 
   reset-perspective
+  resize-world (- worldSizex / 2)  (worldSizex / 2) (- worldSizey / 2) (worldSizex / 2) 
   ;initialise Globals
   set tickLength 0.1
-  set backgroundColor white
-  set victimColor red
+  set backgroundColor blue
+  set victimColor green
   set searcherColor orange
-  set buildingColor blue
+  set buildingColor white
   set visitedColor [230 230 230]
   set noSearchers population
-  set noVictims 0
+  ;set noVictims 5
+  set victimSize 2
+  set searcherSize 1
   set Speed 0.5
   set smoothingFactor 1
   set visionAngle 30
-  set turtleColision FALSE
   set turtleDeath FALSE
   set debug FALSE
+  set-patch-size 8
+  
   
   ;patchVariable
-  set VisitTimerMax 5000 * tickLength
+  set VisitTimerMax decayRate * 10 * tickLength
+  
+  ;victimVariables
+  set driftTurn 5
+  set driftMove 0.01
   
   ;Reporter Values, using Dummy Values
   set DONORMAL 1374
   set RIGHTTURN 2349
   set LEFTTURN 9584  
   
+  set searcherShape "airplane"
+  set victimShape "person"
   
   ;BitSizes
-  set tVisionBitLength 3
+  set tVisionBitLength 4
   set tCollisionDistanceBitLength 3
-  set tMinimumSeparationBitLength 2
+  set tMinimumSeparationBitLength 3
   set tMaxAlignTurnBitLength 5
   set tMaxCohereTurnBitLength 5
   set tMaxSeparateTurnBitLength 5
@@ -127,13 +147,17 @@ to Setup
   ;Generate Victim Patches
   let counteri 0
   while [counteri < noVictims] [
-       let xrand random-pxcor
-       let yrand random-pycor
-       ask patch xrand yrand [
-       if pcolor = backgroundColor [
-         set pcolor victimColor
-         set counteri (counteri + 1)]
-       ]
+    let xrand random-pxcor
+    let yrand random-pycor
+      if [pcolor] of patch xrand yrand = backgroundColor [
+        set counteri (counteri + 1)
+        create-victims 1 [
+          setxy xrand yrand
+          set color victimColor
+          set shape victimShape
+          set size victimSize
+          ]
+      ]
   ]
   ;Create Searcher Turtles
   create-searchers  noSearchers [
@@ -141,6 +165,8 @@ to Setup
     set tToDie 0
     set tTurnLedger 0  
     set color searcherColor
+    set shape searcherShape
+    set size searcherSize
   ]
   
   ask searchers [
@@ -162,13 +188,8 @@ to Setup
 end
 
 
-
-
-
-
-to go
-  ask turtles [
-    ;check between the turtle and the turtles maximum collision detectance range
+to collisionCheck
+      ;check between the turtle and the turtles maximum collision detectance range
     ;if there is nothing recommend continue as normal, otherwise recommend respond to the closest obstacle
     let range 0
     let action (doPath (range))
@@ -194,13 +215,58 @@ to go
       ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
       ]
     [show "ERROR" show action stop]]]
+end
+
+to victimSighted? [checkRange]
+  ;initalise temp variables
+  let blocked FALSE
+  let lblocked FALSE
+  let rblocked FALSE
+  let reportValue 9985
+  
+  ;check what is ahead of the turtles path
+  let target-patch1 patch-ahead checkRange
+  if count victims-on target-patch1 > 0 [
+    set blocked TRUE
   ]
+  let target-patch2 patch-right-and-ahead visionAngle checkRange
+  if count victims-on target-patch2 > 0 [
+    set rblocked TRUE
+  ]
+  let target-patch3 patch-left-and-ahead visionAngle checkRange
+  if count victims-on target-patch3 > 0 [
+    set lblocked TRUE
+  ]
+  
+  ;decide on the best course of action
+  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = TRUE)) [set reportValue tDefaultTurn] [
+  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = FALSE)) [set reportValue tDefaultTurn] [
+  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = TRUE)) [set reportValue tDefaultTurn] [
+  ifelse ((blocked = TRUE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
+  ifelse ((blocked = TRUE) and (rblocked = FALSE) and (lblocked = TRUE)) [set reportValue RIGHTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = TRUE) and (lblocked = FALSE)) [set reportValue LEFTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = FALSE) and (lblocked = TRUE)) [set reportValue RIGHTTURN] [
+  ifelse ((blocked = FALSE) and (rblocked = FALSE) and (lblocked = FALSE)) [set reportValue DONORMAL][show "ERROR" show reportValue stop] ]]]]]]]
+  ;report the best course of action
+  report reportValue
+end
+
+to go
+  ask searchers [
+    collisionCheck
+  ]
+  ;basic random drift for victims
+  ask victims [
+    ifelse (random 2 = 0)[left driftTurn * tickLength][right driftTurn * tickLength]
+    fd (driftMove * tickLength)
+  ]
+  
   ;; the following line is used to make the turtles
   ;; animate more smoothly.
-  repeat smoothingFactor [ ask turtles [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
+  repeat smoothingFactor [ ask searchers [ fd (1 / smoothingFactor) * tMoveDistance ] display ]
   
   ask searchers [if (pcolor != buildingColor) [set tPatchCount (tPatchCount + (1 / (pVisitTimer + 1))) ask patch-here [set pVisitTimer VisitTimerMax]]]
-  ask patches with [pcolor != buildingColor] [set pcolor scale-color red pVisitTimer VisitTimerMax 0]
+  ;ask patches with [pcolor != buildingColor] [set pcolor scale-color red pVisitTimer VisitTimerMax 0]
   ask patches [if pVisitTimer > 0 [set pVisitTimer (pVisitTimer - 1)]]
     
   ask searchers [
@@ -208,29 +274,31 @@ to go
     if (turtleColision = TRUE and count other turtles-on patch-here > 0) [set tToDie (tToDie + 1)]
   ]
   if (turtleDeath = TRUE) [ask searchers [if (tToDie > 50) [die]]]
+  
+  ;Evolve the Population
   if (ticks mod divisionRate = 0) [evolveCS]    
   tick 
 end
 
 to evolveCS
-  if (debug = TRUE) [show "evolve"]
+  ;if (debug = TRUE) [show "evolve"]
   ask searchers [calcFitness] ;calculate fitness
   let agentsByFitness sort-on [tFitness] searchers ;sort the agents by fitness
-  show first agentsByFitness
   ask last agentsByFitness [
     set tNewGeneticCode [tNewGeneticCode] of first agentsByFitness
     set tToDie [tToDie] of first agentsByFitness
-    mutate
+    mutateCS
     extractDNA (tNewGeneticCode)
   ]
 end
 
 to calcFitness
-  set tFitness ((tToDie * abs(tTurnLedger)) / (tPatchCount + 1))
+  ;set tFitness ((tToDie * abs(tTurnLedger)) / (tPatchCount + 1))
+  set tFitness ((abs(tTurnLedger)) / (tPatchCount + 1))
   ;set tFitness (tToDie)
 end
 
-to mutate 
+to mutateCS 
   let pGeneFlip 9
   let GeneFlipCode (list
     (n-values tVisionBitLength [random pGeneFlip = 0]);tVision (0-10)
@@ -361,7 +429,7 @@ to flock  ;; turtle procedure
 end
 
 to find-flockmates  ;; turtle procedure
-  set flockmates other turtles in-radius tVision
+  set flockmates other searchers in-radius tVision
 end
 
 to find-nearest-neighbor ;; turtle procedure
@@ -437,11 +505,11 @@ end
 GRAPHICS-WINDOW
 15
 10
-818
-834
-30
-30
-13.0
+785
+721
+47
+-1
+8.0
 1
 10
 1
@@ -451,10 +519,10 @@ GRAPHICS-WINDOW
 1
 1
 1
--30
-30
--30
-30
+-47
+47
+-37
+47
 1
 1
 1
@@ -504,22 +572,22 @@ population
 population
 0
 500
-50
+32
 1
 1
 NIL
 HORIZONTAL
 
 SLIDER
-912
-125
-1084
-158
+1172
+115
+1344
+148
 Density
 Density
 0
 100
-31.8
+10.2
 0.1
 1
 %
@@ -744,6 +812,87 @@ divisionRate
 100
 3000
 100
+1
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+913
+195
+1051
+240
+TurtleColision
+TurtleColision
+true false
+1
+
+MONITOR
+1354
+113
+1439
+158
+NIL
+count victims
+17
+1
+11
+
+SLIDER
+1172
+46
+1344
+79
+worldSizex
+worldSizex
+0
+100
+95
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1172
+80
+1344
+113
+worldSizey
+worldSizey
+0
+100
+75
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+913
+241
+1085
+274
+decayRate
+decayRate
+0
+100
+50
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+1185
+157
+1357
+190
+noVictims
+noVictims
+0
+100
+23
 1
 1
 NIL
@@ -1100,7 +1249,7 @@ NetLogo 5.1.0
   <experiment name="experiment" repetitions="33" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>go</go>
-    <timeLimit steps="40000"/>
+    <timeLimit steps="20000"/>
     <metric>mean [tVision] of searchers</metric>
     <metric>mean [tCollisionDistance] of searchers</metric>
     <metric>mean [tMinimumSeparation] of searchers</metric>
@@ -1109,11 +1258,15 @@ NetLogo 5.1.0
     <metric>mean [tMaxSeparateTurn] of searchers</metric>
     <metric>mean [tMoveDistance] of searchers</metric>
     <metric>mean [tDefaultTurn] of searchers</metric>
-    <metric>mean [tFitness] of searchers</metric>
+    <metric>TurtleColision</metric>
     <enumeratedValueSet variable="population">
       <value value="50"/>
     </enumeratedValueSet>
-    <steppedValueSet variable="Density" first="0" step="0.25" last="75"/>
+    <steppedValueSet variable="Density" first="0" step="0.5" last="75"/>
+    <enumeratedValueSet variable="TurtleColision">
+      <value value="true"/>
+      <value value="false"/>
+    </enumeratedValueSet>
   </experiment>
 </experiments>
 @#$#@#$#@
