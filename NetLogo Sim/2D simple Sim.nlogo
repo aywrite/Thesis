@@ -18,9 +18,15 @@
 
 breed [searchers searcher]
 breed [victims victim]
+breed [gaTurtles gaTurtle]
 
 turtles-own [
   tDefaultTurn
+]
+
+gaTurtles-own [
+ gaFitness
+ gaGenes 
 ]
 
 searchers-own [
@@ -72,7 +78,7 @@ globals [
   ;World Settings
   ;World Size
 
-  
+  missionSuccess
   noSearchers
   victimSize
   searcherSize
@@ -85,7 +91,6 @@ globals [
   
   visionAngle
   turtleDeath
-  debug
   
   ;patchVariable
   VisitTimerMax ;Rename DecayRate, should this be turtle based?
@@ -105,36 +110,25 @@ globals [
   tMoveDistanceBitLength
   tCollisionDistanceBitLength
   tDefaultTurnBitLength
-  
+  tTrackingRangeBitLength
 
 ]
 
-to Setup
-  ;;SETUP SIMULATION;;
-  ;reset the state, time and view
-  clear-all
-
-  reset-perspective
-  resize-world (- worldSizex / 2)  (worldSizex / 2) (- worldSizey / 2) (worldSizex / 2)
-  
+to initGlobals
   ;;SETUP WORLD:: 
   ;initialise Globals
+  ;colours
+  set missionSuccess 1354
   set tickLength 0.1
   set backgroundColor blue
   set victimColor green
   set searcherColor orange
   set foundColor yellow
   set buildingColor white
-  set visitedColor [230 230 230]
-  set noSearchers population
-  ;set noVictims 5
-  set victimSize 2
-  set searcherSize 1
+  
   set Speed 0.5
   set smoothingFactor 1
   set visionAngle 30
-  set turtleDeath FALSE
-  set debug FALSE
   set-patch-size 8
   set RescueTime 50 / tickLength
   
@@ -149,9 +143,12 @@ to Setup
   set LEFTTURN 9584  
   
   ;;SEARCHERS
+  set noSearchers population
+  set searcherSize 1
   set searcherShape "airplane"
   
   ;;VICTIMS
+  set victimSize 2
   set victimShape "person"
   
   ;BitSizes
@@ -162,7 +159,19 @@ to Setup
   set tMaxCohereTurnBitLength 4
   set tMaxSeparateTurnBitLength 5
   set tMoveDistanceBitLength 3
+  set tTrackingRangeBitLength 4
   set tDefaultTurnBitLength 1
+end
+
+to Setup
+  ;;SETUP SIMULATION;;
+  ;reset the state, time and view
+  clear-all
+
+  reset-perspective
+  resize-world (- worldSizex / 2)  (worldSizex / 2) (- worldSizey / 2) (worldSizex / 2)
+  
+  initGlobals
   
   ;initialise world
   ask patches [set pcolor backgroundColor]
@@ -201,11 +210,34 @@ to Setup
     set shape searcherShape
     set size searcherSize
     set tSearching TRUE
-    set tTrackingRange 7
     set tTrackPoints 0
   ]
   
+  ifelse Hetro = TRUE [setupHetro][setupHomo]
+  reset-ticks
+end
+
+to setupHomo
+  let homoGeneticCode (list
+     (n-values tVisionBitLength [random 2]);tVision (0-10)
+     (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
+     (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
+     (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
+     (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
+     (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
+     (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
+     (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
+     (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
+   )
   ask searchers [
+    set tGeneticCode homoGeneticCode
+    set tNewGeneticCode tGeneticCode 
+    extractDNA (tGeneticCode)
+  ]
+end
+
+to setupHetro
+    ask searchers [
    set tGeneticCode (list
      (n-values tVisionBitLength [random 2]);tVision (0-10)
      (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
@@ -214,32 +246,35 @@ to Setup
      (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
      (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
      (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
+     (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
      (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
    ) 
   ]
   
   
-  ask searchers [set tNewGeneticCode tGeneticCode extractDNA (tGeneticCode)]
-  reset-ticks
+  ask searchers [
+    set tNewGeneticCode tGeneticCode 
+    extractDNA (tGeneticCode)
+  ]
 end
 
 to track
   ;check if the target is still in tracking range
-  ifelse tTracking != nobody and distance tTracking < tVision [
+  ifelse tTracking != nobody and distance tTracking < tTrackingRange [
     ;turn to attempt to track the target
     turn-towards (towards tTracking) (tMaxAlignTurn)
-  set tTrackPoints (tTrackPoints + 1)
-  
-  ;check if any have tracked long ehough to rescue a victim
-  ifelse tTrackCounter < 1 [
-    resetTracking
-    if tTracking != nobody [ask tTracking [die]]
-    set tTracking nobody
-  ]
-  ;otherwise decrement the tracking timer
-  [set tTrackCounter (tTrackCounter - 1)] 
-  
-  
+    set tTrackPoints (tTrackPoints + 1)
+    
+    ;check if any have tracked long ehough to rescue a victim
+    ifelse tTrackCounter < 1 [
+      resetTracking
+      if tTracking != nobody [ask tTracking [die]]
+      set tTracking nobody
+    ]
+    ;otherwise decrement the tracking timer
+    [set tTrackCounter (tTrackCounter - 1)] 
+    
+    
   ][
   resetTracking
   flock
@@ -247,51 +282,50 @@ to track
 end
 
 to searcherBehave
-      ;check between the turtle and the turtles maximum collision detectance range
-    ;if there is nothing recommend continue as normal, otherwise recommend respond to the closest obstacle
-    let range 0
-    let action (doPath (range))
-    
-    while [range < tCollisionDistance and action = DONORMAL] [
-      set range (range + tMoveDistance)
-      set action doPath (range)
-    ]
-    
-    ;based on the recommended action, respond accordingly
-    ifelse (action = DONORMAL) [
-      ifelse tSearching = TRUE [flock][track] 
-      ;if (tMoveDistance < ((Speed) * tickLength)) [set tMoveDistance (tMoveDistance + (0.1 * Speed * tickLength * tickLength))]
-      ] [
-    ifelse (action = RIGHTTURN) [
-      right tMaxSeparateTurn
-      set tTurnLedger (tTurnLedger + 1) 
-      ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
-      ] [
-    ifelse (action = LEFTTURN) [
-      left tMaxSeparateTurn
-      set tTurnLedger (tTurnLedger - 1)  
-      ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
-      ]
-    [show "ERROR" show action stop]]]
+  ;check between the turtle and the turtles maximum collision detectance range
+  ;if there is nothing recommend continue as normal, otherwise recommend respond to the closest obstacle
+  let range 0
+  let action (doPath (range))
+  
+  while [range < tCollisionDistance and action = DONORMAL] [
+    set range (range + tMoveDistance)
+    set action doPath (range)
+  ]
+  
+  ;based on the recommended action, respond accordingly
+  ifelse (action = DONORMAL) [
+    ifelse tSearching = TRUE [flock][track] 
+    ;if (tMoveDistance < ((Speed) * tickLength)) [set tMoveDistance (tMoveDistance + (0.1 * Speed * tickLength * tickLength))]
+  ] [
+  ifelse (action = RIGHTTURN) [
+    right tMaxSeparateTurn
+    set tTurnLedger (tTurnLedger + 1) 
+    ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
+  ] [
+  ifelse (action = LEFTTURN) [
+    left tMaxSeparateTurn
+    set tTurnLedger (tTurnLedger - 1)  
+    ;if (tMoveDistance > 0) [set tMoveDistance (tMoveDistance - (0.1 * Speed * tickLength * tickLength))]
+  ]
+  [show "ERROR" show action stop]]]
 end
 
 to-report victimSighted [checkRange]
   ;initalise temp variables
   let reportValue nobody
-  let detectionChance 100
   
   ;check what is ahead of the turtles path
   let target-patch1 patch-ahead checkRange
   if target-patch1 != nobody and count victims-on target-patch1 > 0 [
-    if random 100 < detectionChance [set reportValue one-of victims-on target-patch1]
+    if random 100 < DetectionChance [set reportValue one-of victims-on target-patch1]
   ]
   let target-patch2 patch-right-and-ahead visionAngle checkRange
   if target-patch2 != nobody and count victims-on target-patch2 > 0 [
-    if random 100 < detectionChance [set reportValue one-of victims-on target-patch2]
+    if random 100 < DetectionChance [set reportValue one-of victims-on target-patch2]
   ]
   let target-patch3 patch-left-and-ahead visionAngle checkRange
   if target-patch3 != nobody and count victims-on target-patch3 > 0 [
-    if random 100 < detectionChance [set reportValue one-of victims-on target-patch3]
+    if random 100 < DetectionChance [set reportValue one-of victims-on target-patch3]
   ]
   
   ;report the best course of action
@@ -310,7 +344,7 @@ to victimBehave
   let action (doPath (range))
   
   while [range < vCollisionRange and action = DONORMAL] [
-    set range (range + vDriftMove)
+    set range (range + 1)
     set action doPath (range)
   ]
   
@@ -329,7 +363,29 @@ to victimBehave
   [show "ERROR" show action stop]]]
 end
 
+to goGA
+  let counter 0
+  let gaList []
+  while [counter < population] [
+    setup
+    go
+    ;let tempFit calcFitnessGA
+    let tempGenes 0
+    ask one-of searchers [set tempGenes tGeneticCode]
+    set gaList lput tempGenes gaList
+    set counter (counter + 1)
+  ]
+  ;store DNA
+  ;store Fitness
+  ;repeate for GApopulation
+  ;combine and get ready to go again
+  ;run again
+  ;run for n or infinity
+end
+
 to go
+  if not any? victims [set missionSuccess TRUE stop]
+  if (ticks) > (5000 / tickLength) [set missionSuccess FALSE stop]
   ;ask the searchers to consider their situation, choose appropriate action
   ask searchers [
     searcherBehave
@@ -352,10 +408,7 @@ to go
     if (pcolor = buildingColor) [set tToDie (tToDie + 1)]
     if (turtleColision = TRUE and count other turtles-on patch-here > 0) [set tToDie (tToDie + 1)]
   ]
-  if (turtleDeath = TRUE) [ask searchers [if (tToDie > 50) [die]]]
-  
-
-  
+    
   ;Evolve the Population
   if (ticks mod divisionRate = 0) [evolveCS]    
   tick 
@@ -363,7 +416,7 @@ end
 
 to evolveCS
   ;if (debug = TRUE) [show "evolve"]
-  ask searchers [calcFitness] ;calculate fitness
+  ask searchers [calcFitnessCS] ;calculate fitness
   let agentsByFitness sort-on [tFitness] searchers ;sort the agents by fitness
   ask last agentsByFitness [
     set tNewGeneticCode [tNewGeneticCode] of first agentsByFitness
@@ -373,10 +426,14 @@ to evolveCS
   ]
 end
 
-to calcFitness
+to calcFitnessCS
   ;set tFitness ((tToDie * abs(tTurnLedger)) / (tPatchCount + 1))
   set tFitness (1 / ((tPatchCount + 1) * (tTrackPoints + 1)))
   ;set tFitness (tToDie)
+end
+
+to calcFitnessGA
+  
 end
 
 to mutateCS
@@ -390,6 +447,7 @@ to mutateCS
     (n-values tMaxCohereTurnBitLength [random pGeneFlip = 0]);tMaxCohereTurn (0-30)
     (n-values tMaxSeparateTurnBitLength [random pGeneFlip = 0]);tMaxSeparateTurn (0-30)
     (n-values tMoveDistanceBitLength [random pGeneFlip = 0]);tMoveDistance (0-3)
+    (n-values tTrackingRangeBitLength [random pGeneFlip = 0]);tTrackingRange (0-3)
     (n-values tDefaultTurnBitLength [random pGeneFlip = 0]);tDefaultTurn
     )
   if length tNewGeneticCode != length GeneFlipCode [show "ERROR" stop]
@@ -489,7 +547,8 @@ to extractDNA [GeneticCode]
   set tMaxCohereTurn (item 4 decCode * tickLength)
   set tMaxSeparateTurn (item 5 decCode * tickLength)
   set tMoveDistance (item 6 decCode * tickLength * 0.1 + 1 * tickLength)
-  ifelse item 7 decCode = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
+  set tTrackingRange (item 7 decCode)
+  ifelse item 8 decCode = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ;show decCode
 end
 
@@ -595,10 +654,10 @@ end
 GRAPHICS-WINDOW
 15
 10
-833
-849
-50
-50
+801
+809
+48
+-1
 8.0
 1
 10
@@ -609,10 +668,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--50
-50
--50
-50
+-48
+48
+-47
+48
 1
 1
 1
@@ -662,7 +721,7 @@ population
 population
 0
 200
-48
+25
 1
 1
 NIL
@@ -684,10 +743,10 @@ Density
 HORIZONTAL
 
 MONITOR
-1448
-116
-1529
-161
+913
+303
+994
+348
 Alive Turtles
 count searchers
 0
@@ -695,10 +754,10 @@ count searchers
 11
 
 PLOT
-1533
-12
-1733
-162
+1680
+10
+1880
+160
 Population
 NIL
 NIL
@@ -710,31 +769,14 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot count turtles"
+"default" 1.0 0 -16777216 true "" "plot count searchers"
+"pen-1" 1.0 0 -2674135 true "" "plot count victims"
 
 PLOT
-828
-408
-1028
-558
-Vision Distribution
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "histogram [tVision] of searchers"
-
-PLOT
-830
-566
-1030
-716
+1680
+164
+1880
+314
 Average Vision Range
 NIL
 NIL
@@ -749,82 +791,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot mean [tVision] of searchers"
 
 PLOT
-1029
-408
-1229
-558
-Collision Distance Distribution
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "histogram [tCollisionDistance] of searchers"
-
-PLOT
-1232
-408
-1432
-558
-Minimum Seperation Distribution
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "histogram [tMinimumSeparation] of searchers"
-
-PLOT
-1437
-408
-1637
-558
-Max Separation Distribution
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "histogram [tMaxSeparateTurn] of searchers"
-
-PLOT
-1642
-408
-1842
-558
-Move Distance Distribution
-NIL
-NIL
-0.0
-0.2
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "histogram [tMoveDistance] of searchers"
-
-PLOT
-1035
-567
-1235
-717
+1681
+319
+1881
+469
 plot 2
 NIL
 NIL
@@ -839,10 +809,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot mean [tCollisionDistance] of searchers"
 
 PLOT
-1238
-566
-1438
-716
+1682
+474
+1882
+624
 plot 3
 NIL
 NIL
@@ -857,10 +827,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot (mean [tMinimumSeparation] of searchers) / tickLength"
 
 PLOT
-1443
-568
-1643
-718
+1683
+630
+1883
+780
 plot 4
 NIL
 NIL
@@ -875,10 +845,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot (mean [tMaxSeparateTurn] of searchers) / tickLength"
 
 PLOT
-1650
-569
-1850
-719
+1472
+11
+1672
+161
 plot 5
 NIL
 NIL
@@ -918,10 +888,10 @@ true false
 0
 
 MONITOR
-1354
-113
-1439
-158
+1004
+302
+1089
+347
 NIL
 count victims
 17
@@ -937,7 +907,7 @@ worldSizex
 worldSizex
 0
 100
-100
+96
 1
 1
 NIL
@@ -952,7 +922,7 @@ worldSizey
 worldSizey
 0
 100
-100
+94
 1
 1
 NIL
@@ -967,7 +937,7 @@ decayRate
 decayRate
 0
 100
-100
+50
 1
 1
 NIL
@@ -982,11 +952,86 @@ noVictims
 noVictims
 0
 100
-19
+30
 1
 1
 NIL
 HORIZONTAL
+
+SLIDER
+1176
+194
+1348
+227
+DetectionChance
+DetectionChance
+0
+100
+80
+1
+1
+NIL
+HORIZONTAL
+
+PLOT
+1472
+167
+1672
+317
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot (mean [tTrackingRange] of searchers)"
+
+BUTTON
+977
+53
+1043
+86
+Go GA
+goGA
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+SLIDER
+913
+363
+1085
+396
+populationGA
+populationGA
+0
+100
+10
+1
+1
+NIL
+HORIZONTAL
+
+CHOOSER
+913
+402
+1051
+447
+Hetro
+Hetro
+true false
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1356,6 +1401,37 @@ NetLogo 5.1.0
     <enumeratedValueSet variable="TurtleColision">
       <value value="true"/>
       <value value="false"/>
+    </enumeratedValueSet>
+  </experiment>
+  <experiment name="Moitor" repetitions="33" runMetricsEveryStep="false">
+    <setup>setup</setup>
+    <go>go</go>
+    <metric>missionSuccess</metric>
+    <metric>ticks</metric>
+    <enumeratedValueSet variable="DetectionChance">
+      <value value="80"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="worldSizex">
+      <value value="96"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="decayRate">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="worldSizey">
+      <value value="94"/>
+    </enumeratedValueSet>
+    <steppedValueSet variable="noVictims" first="1" step="1" last="30"/>
+    <enumeratedValueSet variable="divisionRate">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Density">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TurtleColision">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="population">
+      <value value="25"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
