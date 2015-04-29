@@ -416,6 +416,42 @@ to-report calcFitnessGA
   report (timeFitness / 2) + (foundFitness / 2)
 end
 
+;;THIS SECTION OF CODE IS BASED ON 
+;Stonedahl, F. and Wilensky, U. (2008). NetLogo Simple Genetic Algorithm model. 
+;http://ccl.northwestern.edu/netlogo/models/SimpleGeneticAlgorithm. 
+;Center for Connected Learning and Computer-Based Modeling, Northwestern University, Evanston, IL.
+to-report create-next-generation
+  let TotalGene []
+  let crossover-rate 50
+  let crossover-count  (floor (populationGA * crossover-rate / 100 / 2))
+  
+  repeat crossover-count [
+    ;select the parents, p1 and p2
+    let p1 position last sort (n-of 3 fitnessList) fitnessList
+    let p2 position last sort (n-of 3 fitnessList) fitnessList
+    
+    let child-bits crossover (mutateGA (item p1 gaListOld)) (mutateGA (item p2 gaListOld))
+    ; create the two children, with their new genetic material
+    set TotalGene lput item 0 child-bits TotalGene
+    set TotalGene lput item 1 child-bits TotalGene
+  ]
+  
+  repeat (populationGA - crossover-count * 2)
+  [
+    let p3 position last sort (n-of 3 fitnessList) fitnessList
+    set TotalGene lput mutateGA (item p3 gaListOld) TotalGene
+  ]
+  report TotalGene
+end
+
+to-report crossover [bits1 bits2]
+  let split-point 1 + random (length bits1 - 1)
+  report list (sentence (sublist bits1 0 split-point)
+                        (sublist bits2 split-point length bits2))
+              (sentence (sublist bits2 0 split-point)
+                        (sublist bits1 split-point length bits1))
+end
+
 to goGA
   clear-all
   ;First Run
@@ -434,7 +470,8 @@ to goGA
   while [generationNo < maxGenerations] [
     set generationNo (generationNo + 1)
     ;Create the Next generation
-    set gaListOld evolveGA
+    ;set gaListOld evolveGA
+    set gaListOld create-next-generation
     ;Run with the new generation
     setup
     set counter 0
