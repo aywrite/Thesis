@@ -111,6 +111,11 @@ globals [
   tCollisionDistanceBitLength
   tDefaultTurnBitLength
   tTrackingRangeBitLength
+  
+  ;GA-These variables should only be reset by goGA
+  gaListOld
+  gaListNew
+  fitnessList
 
 ]
 
@@ -166,7 +171,12 @@ end
 to Setup
   ;;SETUP SIMULATION;;
   ;reset the state, time and view
-  clear-all
+  ;clear-all
+  cp
+  ct
+  cd
+  clear-ticks
+  
 
   reset-perspective
   resize-world (- worldSizex / 2)  (worldSizex / 2) (- worldSizey / 2) (worldSizex / 2)
@@ -218,22 +228,22 @@ to Setup
 end
 
 to setupHomo
-  let homoGeneticCode (list
-     (n-values tVisionBitLength [random 2]);tVision (0-10)
-     (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
-     (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
-     (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
-     (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
-     (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
-     (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
-     (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
-     (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
-   )
-  ask searchers [
-    set tGeneticCode homoGeneticCode
-    set tNewGeneticCode tGeneticCode 
-    extractDNA (tGeneticCode)
-  ]
+;  let homoGeneticCode (list
+;     (n-values tVisionBitLength [random 2]);tVision (0-10)
+;     (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
+;     (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
+;     (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
+;     (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
+;     (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
+;     (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
+;     (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
+;     (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
+;   )
+;  ask searchers [
+;    set tGeneticCode homoGeneticCode
+;    set tNewGeneticCode tGeneticCode 
+;    extractDNA (tGeneticCode)
+;  ]
 end
 
 to setupHetro
@@ -363,29 +373,82 @@ to victimBehave
   [show "ERROR" show action stop]]]
 end
 
-to goGA
+to-report geneticCodeGA
+  let TotalGene []
   let counter 0
-  let gaList []
-  while [counter < population] [
-    setup
-    go
-    ;let tempFit calcFitnessGA
-    let tempGenes 0
-    ask one-of searchers [set tempGenes tGeneticCode]
-    set gaList lput tempGenes gaList
+  while [counter < populationGA] [
+    set counter (counter + 1)
+    let tempGene (list
+      (n-values tVisionBitLength [random 2]);tVision (0-10)
+      (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
+      (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
+      (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
+      (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
+      (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
+      (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
+      (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
+      (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
+  )
+    set TotalGene lput tempGene TotalGene
+  ]
+  report TotalGene
+end
+
+to-report evolveGA
+  let TotalGene []
+  let counter 0
+  let bestIndex position first sort fitnessList fitnessList
+  while [counter < populationGA] [
+    let tempGene item bestIndex gaListOld
+    set tempGene mutateGA (tempGene)
+    set TotalGene lput tempGene TotalGene
     set counter (counter + 1)
   ]
-  ;store DNA
-  ;store Fitness
-  ;repeate for GApopulation
-  ;combine and get ready to go again
-  ;run again
-  ;run for n or infinity
+  report TotalGene
+end
+
+to goGA
+  clear-all
+  ;First Run
+  setup
+  let counter 0
+  set fitnessList []
+  set gaListOld geneticCodeGA
+  while [counter < populationGA] [
+    set fitnessList lput modelRun (counter) fitnessList
+    set counter (counter + 1)
+  ]
+  loop [
+    ;Create the Next generation
+    set gaListOld evolveGA
+    ;Run with the new generation
+    setup
+    set counter 0
+    set fitnessList []
+    while [counter < populationGA] [
+      set fitnessList lput modelRun (counter) fitnessList
+      set counter (counter + 1)
+    ]
+  ]
+end
+
+to-report modelRun [index]
+  setup
+  ask searchers [
+    set tGeneticCode item index gaListOld
+    set tNewGeneticCode tGeneticCode
+    extractDNA (tGeneticCode)
+  ]
+  loop [
+    if not any? victims [report (ticks * (count victims + 1))]
+    if (ticks) > (1000 / tickLength) [report (ticks * (count victims + 1))]
+    go
+  ]
 end
 
 to go
   if not any? victims [set missionSuccess TRUE stop]
-  if (ticks) > (5000 / tickLength) [set missionSuccess FALSE stop]
+  if (ticks) > (10000 / tickLength) [set missionSuccess FALSE stop]
   ;ask the searchers to consider their situation, choose appropriate action
   ask searchers [
     searcherBehave
@@ -410,7 +473,7 @@ to go
   ]
     
   ;Evolve the Population
-  if (ticks mod divisionRate = 0) [evolveCS]    
+  if (ticks mod divisionRate = 0) and (doEvolveCS = TRUE) [evolveCS]    
   tick 
 end
 
@@ -432,8 +495,37 @@ to calcFitnessCS
   ;set tFitness (tToDie)
 end
 
-to calcFitnessGA
-  
+to-report mutateGA [inputGene]
+  ;this looks like the gene coding could be removed and replaced with a rand = 0 statment 
+  let pGeneFlip 9
+  let GeneFlipCode (list
+    (n-values tVisionBitLength [random pGeneFlip = 0]);tVision (0-10)
+    (n-values tCollisionDistanceBitLength [random pGeneFlip = 0]);tCollisionDistance (0-10)
+    (n-values tMinimumSeparationBitLength [random pGeneFlip = 0]);tMinimumSeperation (0-20)
+    (n-values tMaxAlignTurnBitLength [random pGeneFlip = 0]);MaxAlignTurn (0-30)
+    (n-values tMaxCohereTurnBitLength [random pGeneFlip = 0]);tMaxCohereTurn (0-30)
+    (n-values tMaxSeparateTurnBitLength [random pGeneFlip = 0]);tMaxSeparateTurn (0-30)
+    (n-values tMoveDistanceBitLength [random pGeneFlip = 0]);tMoveDistance (0-3)
+    (n-values tTrackingRangeBitLength [random pGeneFlip = 0]);tTrackingRange (0-3)
+    (n-values tDefaultTurnBitLength [random pGeneFlip = 0]);tDefaultTurn
+    )
+  if length inputGene != length GeneFlipCode [show "ERROR" stop]
+  let i 0
+  let imax length inputGene - 1
+  while [i < imax] [
+    let j 0
+    let jmax length item i inputGene - 1
+    while [j < jmax] [
+      if item j item i GeneFlipCode = TRUE [ 
+        let oldGene item i inputGene
+        ifelse item j oldGene = 0 [set oldGene replace-item j oldGene 1][set OldGene replace-item j oldGene 0]
+        set inputGene replace-item i inputGene oldGene
+      ]
+      set j (j + 1)
+    ]
+    set i (i + 1)
+  ]
+  report inputGene 
 end
 
 to mutateCS
@@ -998,7 +1090,7 @@ BUTTON
 86
 Go GA
 goGA
-T
+NIL
 1
 T
 OBSERVER
@@ -1017,7 +1109,7 @@ populationGA
 populationGA
 0
 100
-10
+5
 1
 1
 NIL
@@ -1030,6 +1122,16 @@ CHOOSER
 447
 Hetro
 Hetro
+true false
+1
+
+CHOOSER
+913
+452
+1051
+497
+doEvolveCS
+doEvolveCS
 true false
 1
 
