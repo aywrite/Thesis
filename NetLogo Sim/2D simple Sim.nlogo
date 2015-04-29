@@ -88,6 +88,7 @@ globals [
   Speed
   smoothingFactor
   RescueTime
+  totalGATicks
   
   visionAngle
   turtleDeath
@@ -116,6 +117,7 @@ globals [
   gaListOld
   gaListNew
   fitnessList
+  generationNo
 
 ]
 
@@ -136,6 +138,7 @@ to initGlobals
   set visionAngle 30
   set-patch-size 8
   set RescueTime 50 / tickLength
+  set totalGATicks (500 / tickLength)
   
   ;;PATCHES
   ;patchVariable
@@ -298,7 +301,7 @@ to searcherBehave
   let action (doPath (range))
   
   while [range < tCollisionDistance and action = DONORMAL] [
-    set range (range + tMoveDistance)
+    set range (range + 0.5)
     set action doPath (range)
   ]
   
@@ -397,7 +400,7 @@ end
 to-report evolveGA
   let TotalGene []
   let counter 0
-  let bestIndex position first sort fitnessList fitnessList
+  let bestIndex position last sort fitnessList fitnessList
   while [counter < populationGA] [
     let tempGene item bestIndex gaListOld
     set tempGene mutateGA (tempGene)
@@ -407,9 +410,16 @@ to-report evolveGA
   report TotalGene
 end
 
+to-report calcFitnessGA
+  let timeFitness 1 - (ticks / totalGATicks) ;percentage of total time needed
+  let foundFitness ((noVictims - count victims) / noVictims) ;percentage of total victims found
+  report (timeFitness / 2) + (foundFitness / 2)
+end
+
 to goGA
   clear-all
   ;First Run
+  set generationNo 0
   setup
   let counter 0
   set fitnessList []
@@ -418,7 +428,11 @@ to goGA
     set fitnessList lput modelRun (counter) fitnessList
     set counter (counter + 1)
   ]
-  loop [
+  
+  plotFitness
+  
+  while [generationNo < maxGenerations] [
+    set generationNo (generationNo + 1)
     ;Create the Next generation
     set gaListOld evolveGA
     ;Run with the new generation
@@ -429,7 +443,21 @@ to goGA
       set fitnessList lput modelRun (counter) fitnessList
       set counter (counter + 1)
     ]
+    plotFitness
+    
   ]
+end
+
+to plotFitness
+  set-current-plot "FitnessVSGen"
+  set-current-plot-pen "pen-0"
+  plot-pen-down
+  plotxy generationNo ((sum fitnessList) / populationGA) 
+  plot-pen-up
+  set-current-plot-pen "pen-1"
+  plot-pen-down
+  plotxy generationNo (last sort fitnessList) 
+  plot-pen-up
 end
 
 to-report modelRun [index]
@@ -440,8 +468,8 @@ to-report modelRun [index]
     extractDNA (tGeneticCode)
   ]
   loop [
-    if not any? victims [report (ticks * (count victims + 1))]
-    if (ticks) > (1000 / tickLength) [report (ticks * (count victims + 1))]
+    if not any? victims [report calcFitnessGA]
+    if (ticks) >= (totalGATicks) [report calcFitnessGA]
     go
   ]
 end
@@ -700,6 +728,7 @@ to-report average-flockmate-heading  ;; turtle procedure
     [ report atan x-component y-component ]
 end
 
+
 ;;; COHERE
 
 to cohere  ;; turtle procedure
@@ -746,10 +775,10 @@ end
 GRAPHICS-WINDOW
 15
 10
-801
-809
-48
--1
+627
+642
+37
+37
 8.0
 1
 10
@@ -760,10 +789,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--48
-48
--47
-48
+-37
+37
+-37
+37
 1
 1
 1
@@ -846,10 +875,10 @@ count searchers
 11
 
 PLOT
-1680
-10
-1880
-160
+854
+547
+1252
+782
 Population
 NIL
 NIL
@@ -859,7 +888,7 @@ NIL
 10.0
 true
 false
-"" ""
+"" "set-plot-x-range (plot-x-min + 1) (plot-x-max + 1)"
 PENS
 "default" 1.0 0 -16777216 true "" "plot count searchers"
 "pen-1" 1.0 0 -2674135 true "" "plot count victims"
@@ -999,7 +1028,7 @@ worldSizex
 worldSizex
 0
 100
-96
+74
 1
 1
 NIL
@@ -1014,7 +1043,7 @@ worldSizey
 worldSizey
 0
 100
-94
+74
 1
 1
 NIL
@@ -1044,7 +1073,7 @@ noVictims
 noVictims
 0
 100
-30
+20
 1
 1
 NIL
@@ -1108,8 +1137,8 @@ SLIDER
 populationGA
 populationGA
 0
-100
-5
+50
+10
 1
 1
 NIL
@@ -1134,6 +1163,40 @@ doEvolveCS
 doEvolveCS
 true false
 1
+
+PLOT
+1367
+326
+1663
+568
+FitnessVSGen
+NIL
+NIL
+0.0
+10.0
+0.0
+1.0
+true
+false
+"" ""
+PENS
+"pen-0" 1.0 0 -2674135 true "" ""
+"pen-1" 1.0 0 -13345367 true "" ""
+
+SLIDER
+908
+500
+1081
+534
+maxGenerations
+maxGenerations
+0
+75
+10
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
