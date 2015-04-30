@@ -1,0 +1,115 @@
+;Variable Declarations
+;------------------------------------------------------------------------------
+;                   Copyright 2014 Andrew Wright
+; This code was written under the supervision of John R. Page at the 
+; University of New South Wales submited in partial requirement for the degree of Bacholer of Engineering (Aerospace)
+;
+;   Licensed under the Apache License, Version 2.0 (the "License");
+;   you may not use this file except in compliance with the License.
+;   You may obtain a copy of the License at
+;
+;       http://www.apache.org/licenses/LICENSE-2.0
+;
+;   Unless required by applicable law or agreed to in writing, software
+;   distributed under the License is distributed on an "AS IS" BASIS,
+;   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+;   See the License for the specific language governing permissions and
+;   limitations under the License.
+;------------------------------------------------------------------------------
+
+breed [searchers searcher]
+breed [victims victim]
+
+turtles-own [
+  tDefaultTurn
+]
+
+searchers-own [
+  flockmates         ;; agentset of nearby turtles
+  nearest-neighbor   ;; closest one of our flockmates
+  ;genetic values
+  tVision
+  tMinimumSeparation
+  tMaxAlignTurn
+  tMaxCohereTurn
+  tMaxSeparateTurn
+  tMaxTrackTurn
+  tMoveDistance
+  tCollisionDistance
+  tGeneticCode
+  tNewGeneticCode
+  ;other values
+  tPatchCount
+  tToDie
+  tFitness
+  tTurnLedger
+  tSearching
+  tTracking
+  tTrackCounter
+  tTrackingRange
+  tTrackPoints
+]
+
+victims-own [
+  vDriftTurn
+  vDriftMove
+  vCollisionRange
+]
+
+patches-own [
+ odds
+ pVisitTimer 
+]
+
+globals [
+  ;colours NB spelling is american as this is a code base
+  backgroundColor
+  victimColor
+  searcherColor
+  buildingColor
+  visitedColor
+  foundColor
+  
+  ;World Settings
+  ;World Size
+
+  noSearchers
+  victimSize
+  searcherSize
+  searcherShape
+  victimShape
+  tickLength
+  Speed
+  smoothingFactor
+  RescueTime
+  totalGATicks
+  
+  visionAngle
+  turtleDeath
+  
+  ;patchVariable
+  VisitTimerMax ;Rename DecayRate, should this be turtle based?
+  
+  ;Reporter Values
+  DONORMAL
+  RIGHTTURN
+  LEFTTURN
+  
+  
+  ;BitSizes
+  tVisionBitLength
+  tMinimumSeparationBitLength
+  tMaxAlignTurnBitLength
+  tMaxCohereTurnBitLength
+  tMaxSeparateTurnBitLength
+  tMoveDistanceBitLength
+  tCollisionDistanceBitLength
+  tDefaultTurnBitLength
+  tTrackingRangeBitLength
+  
+  ;GA-These variables should only be reset by goGA
+  gaListOld
+  fitnessList
+  generationNo
+
+]

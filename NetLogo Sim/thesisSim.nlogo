@@ -16,103 +16,7 @@
 ;   limitations under the License.
 ;------------------------------------------------------------------------------
 
-breed [searchers searcher]
-breed [victims victim]
-breed [gaTurtles gaTurtle]
-
-turtles-own [
-  tDefaultTurn
-]
-
-searchers-own [
-  flockmates         ;; agentset of nearby turtles
-  nearest-neighbor   ;; closest one of our flockmates
-  ;genetic values
-  tVision
-  tMinimumSeparation
-  tMaxAlignTurn
-  tMaxCohereTurn
-  tMaxSeparateTurn
-  tMaxTrackTurn
-  tMoveDistance
-  tCollisionDistance
-  tGeneticCode
-  tNewGeneticCode
-  ;other values
-  tPatchCount
-  tToDie
-  tFitness
-  tTurnLedger
-  tSearching
-  tTracking
-  tTrackCounter
-  tTrackingRange
-  tTrackPoints
-]
-
-victims-own [
-  vDriftTurn
-  vDriftMove
-  vCollisionRange
-]
-
-patches-own [
- odds
- pVisitTimer 
-]
-
-globals [
-  ;colours NB spelling is american as this is a code base
-  backgroundColor
-  victimColor
-  searcherColor
-  buildingColor
-  visitedColor
-  foundColor
-  
-  ;World Settings
-  ;World Size
-
-  noSearchers
-  victimSize
-  searcherSize
-  searcherShape
-  victimShape
-  tickLength
-  Speed
-  smoothingFactor
-  RescueTime
-  totalGATicks
-  
-  visionAngle
-  turtleDeath
-  
-  ;patchVariable
-  VisitTimerMax ;Rename DecayRate, should this be turtle based?
-  
-  ;Reporter Values
-  DONORMAL
-  RIGHTTURN
-  LEFTTURN
-  
-  
-  ;BitSizes
-  tVisionBitLength
-  tMinimumSeparationBitLength
-  tMaxAlignTurnBitLength
-  tMaxCohereTurnBitLength
-  tMaxSeparateTurnBitLength
-  tMoveDistanceBitLength
-  tCollisionDistanceBitLength
-  tDefaultTurnBitLength
-  tTrackingRangeBitLength
-  
-  ;GA-These variables should only be reset by goGA
-  gaListOld
-  fitnessList
-  generationNo
-
-]
+__includes ["VariableDeclarations.nls"]
 
 to initGlobals
   ;;SETUP WORLD:: 
@@ -163,21 +67,8 @@ to initGlobals
   set tDefaultTurnBitLength 1
 end
 
-to Setup
-  ;;SETUP SIMULATION;;
-  ;reset the state, time and view
-  ;clear-all
-  cp
-  ct
-  cd
-  clear-ticks
-  
-
-  reset-perspective
+to initWorld
   resize-world (- worldSizex / 2)  (worldSizex / 2) (- worldSizey / 2) (worldSizex / 2)
-  
-  initGlobals
-  
   ;initialise world
   ask patches [set pcolor backgroundColor]
   build-rubble
@@ -186,15 +77,15 @@ to Setup
   while [counteri < noVictims] [
     let xrand random-pxcor
     let yrand random-pycor
-      if [pcolor] of patch xrand yrand = backgroundColor [
-        set counteri (counteri + 1)
-        create-victims 1 [
-          setxy xrand yrand
-          set color victimColor
-          set shape victimShape
-          set size victimSize
-          ]
+    if [pcolor] of patch xrand yrand = backgroundColor [
+      set counteri (counteri + 1)
+      create-victims 1 [
+        setxy xrand yrand
+        set color victimColor
+        set shape victimShape
+        set size victimSize
       ]
+    ]
   ]
   
   ;victimVariables
@@ -217,43 +108,40 @@ to Setup
     set tSearching TRUE
     set tTrackPoints 0
   ]
-  
+end
+
+to reset
+  ;;SETUP SIMULATION;;
+  ;reset the state, time and view
+  clear-ticks
+  cp
+  ct
+  cd
+  reset-perspective
+end
+
+to Setup
+  clear-all
+  reset
+  initGlobals
+  initWorld
+    
   ifelse Hetro = TRUE [setupHetro][setupHomo]
   reset-ticks
 end
 
 to setupHomo
-;  let homoGeneticCode (list
-;     (n-values tVisionBitLength [random 2]);tVision (0-10)
-;     (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
-;     (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
-;     (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
-;     (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
-;     (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
-;     (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
-;     (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
-;     (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
-;   )
-;  ask searchers [
-;    set tGeneticCode homoGeneticCode
-;    set tNewGeneticCode tGeneticCode 
-;    extractDNA (tGeneticCode)
-;  ]
+  let homoGeneticCode randomGeneCode
+  ask searchers [
+    set tGeneticCode homoGeneticCode
+    set tNewGeneticCode tGeneticCode 
+    extractDNA (tGeneticCode)
+  ]
 end
 
 to setupHetro
   ask searchers [
-    set tGeneticCode (list
-      (n-values tVisionBitLength [random 2]);tVision (0-10)
-      (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
-      (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
-      (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
-      (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
-      (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
-      (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
-      (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
-      (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
-    ) 
+    set tGeneticCode randomGeneCode
   ]
   
   
@@ -370,25 +258,41 @@ to victimBehave
   [show "ERROR" show action stop]]]
 end
 
-to-report geneticCodeGA
+to-report GenerateGeneticCode [populationGGC isHetroGGC]
   let TotalGene []
   let counter 0
-  while [counter < populationGA] [
-    set counter (counter + 1)
-    let tempGene (list
-      (n-values tVisionBitLength [random 2]);tVision (0-10)
-      (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
-      (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
-      (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
-      (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
-      (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
-      (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
-      (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
-      (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
-  )
-    set TotalGene lput tempGene TotalGene
+  let tempGene []
+  
+  ifelse isHetroGGC = TRUE [ ;Genereate a seperate ranndom gene for every member of the population
+    while [counter < populationGGC] [
+      set counter (counter + 1)
+      set tempGene randomGeneCode
+      set TotalGene lput tempGene TotalGene
+    ]
   ]
+  [;genereate a random gene then copy it exactly to every member of the population
+    set tempGene randomGeneCode
+    while [counter < populationGGC] [
+      set counter (counter + 1)
+      set TotalGene lput tempGene TotalGene
+    ]
+  ]
+  
   report TotalGene
+end
+
+to-report randomGeneCode
+  report (list
+    (n-values tVisionBitLength [random 2]);tVision (0-10)
+    (n-values tCollisionDistanceBitLength [random 2]);tCollisionDistance (0-10)
+    (n-values tMinimumSeparationBitLength [random 2]);tMinimumSeperation (0-20)
+    (n-values tMaxAlignTurnBitLength [random 2]);MaxAlignTurn (0-30)
+    (n-values tMaxCohereTurnBitLength [random 2]);tMaxCohereTurn (0-30)
+    (n-values tMaxSeparateTurnBitLength [random 2]);tMaxSeparateTurn (0-30)
+    (n-values tMoveDistanceBitLength [random 2]);tMoveDistance (0-3)
+    (n-values tTrackingRangeBitLength [random 2]);tTrackingRange (0-3)
+    (n-values tDefaultTurnBitLength [random 2]);tDefaultTurn
+    )
 end
 
 to-report evolveGA
@@ -446,37 +350,32 @@ to-report crossover [bits1 bits2]
                         (sublist bits1 split-point length bits1))
 end
 
-to goGA
+to setupGA
   clear-all
   ;First Run
   set generationNo 0
-  setup
+  reset
+  initGlobals
+  initWorld
+  reset-ticks
+  set fitnessList []
+  set gaListOld GenerateGeneticCode (populationGA) (TRUE)
+end
+
+to goGA
+  if generationNo > maxGenerations [stop]
+  ;Run with the new generation
   let counter 0
   set fitnessList []
-  set gaListOld geneticCodeGA
   while [counter < populationGA] [
     set fitnessList lput modelRun (counter) fitnessList
     set counter (counter + 1)
   ]
-  
   plotFitness
-  
-  while [generationNo < maxGenerations] [
-    set generationNo (generationNo + 1)
-    ;Create the Next generation
-    ;set gaListOld evolveGA
-    set gaListOld create-next-generation
-    ;Run with the new generation
-    setup
-    set counter 0
-    set fitnessList []
-    while [counter < populationGA] [
-      set fitnessList lput modelRun (counter) fitnessList
-      set counter (counter + 1)
-    ]
-    plotFitness
-    
-  ]
+  set generationNo (generationNo + 1)
+  ;Create the Next generation
+  ;set gaListOld evolveGA
+  set gaListOld create-next-generation
 end
 
 to plotFitness
@@ -492,7 +391,10 @@ to plotFitness
 end
 
 to-report modelRun [index]
-  setup
+  reset
+  initGlobals
+  initWorld
+  reset-ticks
   ask searchers [
     set tGeneticCode item index gaListOld
     set tNewGeneticCode tGeneticCode
@@ -575,25 +477,13 @@ end
 to mutateCS
   ;this looks like the gene coding could be removed and replaced with a rand = 0 statment see mutateGA
   let pGeneFlip 9
-  let GeneFlipCode (list
-    (n-values tVisionBitLength [random pGeneFlip = 0]);tVision (0-10)
-    (n-values tCollisionDistanceBitLength [random pGeneFlip = 0]);tCollisionDistance (0-10)
-    (n-values tMinimumSeparationBitLength [random pGeneFlip = 0]);tMinimumSeperation (0-20)
-    (n-values tMaxAlignTurnBitLength [random pGeneFlip = 0]);MaxAlignTurn (0-30)
-    (n-values tMaxCohereTurnBitLength [random pGeneFlip = 0]);tMaxCohereTurn (0-30)
-    (n-values tMaxSeparateTurnBitLength [random pGeneFlip = 0]);tMaxSeparateTurn (0-30)
-    (n-values tMoveDistanceBitLength [random pGeneFlip = 0]);tMoveDistance (0-3)
-    (n-values tTrackingRangeBitLength [random pGeneFlip = 0]);tTrackingRange (0-3)
-    (n-values tDefaultTurnBitLength [random pGeneFlip = 0]);tDefaultTurn
-    )
-  if length tNewGeneticCode != length GeneFlipCode [show "ERROR" stop]
   let i 0
   let imax length tNewGeneticCode - 1
   while [i < imax] [
     let j 0
     let jmax length item i tNewGeneticCode - 1
     while [j < jmax] [
-      if item j item i GeneFlipCode = TRUE [ 
+      if random pGeneFlip = 0 [ 
         let oldGene item i tNewGeneticCode
         ifelse item j oldGene = 0 [set oldGene replace-item j oldGene 1][set OldGene replace-item j oldGene 0]
         set tNewGeneticCode replace-item i tNewGeneticCode oldGene
@@ -653,28 +543,7 @@ end
 
 
 to extractDNA [GeneticCode]
-  ;let binaryCode []
-  let decCode []
-  let i 0
-  while [i < length GeneticCode] [
-    let subBinaryCode []
-    let decTotal 0
-    set subBinaryCode (lput (first (item i GeneticCode)) subBinaryCode)
-    set decTotal (decTotal + (2 ^ (length (item i GeneticCode) - 1) * first subBinaryCode))
-    
-    let j 1
-    while [j < length (item i GeneticCode)] [
-      let Gcurrent item j (item i GeneticCode)
-      let Bprevious item (j - 1) subBinaryCode
-      ifelse (Gcurrent + Bprevious) = 2[set subBinaryCode lput 0 subBinaryCode][set subBinaryCode lput (Gcurrent + Bprevious) subBinaryCode]
-      set decTotal (decTotal + (2 ^ (length (item i GeneticCode) - j - 1) * item j subBinaryCode))
-      set j (j + 1)  
-    ]
-    ;set binaryCode lput subBinaryCode binaryCode
-    set decCode lput decTotal decCode
-    set i (i + 1)
-    
-  ]
+  let decCode grayToDec (GeneticCode)
   ;show binaryCode
   set tVision item 0 decCode
   set tCollisionDistance item 1 decCode
@@ -686,6 +555,29 @@ to extractDNA [GeneticCode]
   set tTrackingRange (item 7 decCode)
   ifelse item 8 decCode = 0 [set tDefaultTurn LEFTTURN][set tDefaultTurn RIGHTTURN]
   ;show decCode
+end
+
+to-report grayToDec [grayCode]
+  let decCode []
+  let i 0
+  while [i < length grayCode] [
+    let subBinaryCode []
+    let decTotal 0
+    set subBinaryCode (lput (first (item i grayCode)) subBinaryCode)
+    set decTotal (decTotal + (2 ^ (length (item i grayCode) - 1) * first subBinaryCode))
+    
+    let j 1
+    while [j < length (item i grayCode)] [
+      let Gcurrent item j (item i grayCode)
+      let Bprevious item (j - 1) subBinaryCode
+      ifelse (Gcurrent + Bprevious) = 2[set subBinaryCode lput 0 subBinaryCode][set subBinaryCode lput (Gcurrent + Bprevious) subBinaryCode]
+      set decTotal (decTotal + (2 ^ (length (item i grayCode) - j - 1) * item j subBinaryCode))
+      set j (j + 1)  
+    ]
+    set decCode lput decTotal decCode
+    set i (i + 1)
+  ]
+  report decCode
 end
 
 ;-------- The following portion of Code is taken from: --------
@@ -791,8 +683,8 @@ end
 GRAPHICS-WINDOW
 15
 10
-627
-642
+625
+641
 37
 37
 8.0
@@ -889,115 +781,6 @@ count searchers
 0
 1
 11
-
-PLOT
-854
-547
-1252
-782
-Population
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" "if plot-x-max > (totalGATicks * populationGA) [set-plot-x-range (plot-x-min + 1) (plot-x-max + 1)]"
-PENS
-"default" 1.0 0 -16777216 true "" "plot count searchers"
-"pen-1" 1.0 0 -2674135 true "" "plot count victims"
-
-PLOT
-1680
-164
-1880
-314
-Average Vision Range
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot mean [tVision] of searchers"
-
-PLOT
-1681
-319
-1881
-469
-plot 2
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot mean [tCollisionDistance] of searchers"
-
-PLOT
-1682
-474
-1882
-624
-plot 3
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot (mean [tMinimumSeparation] of searchers) / tickLength"
-
-PLOT
-1683
-630
-1883
-780
-plot 4
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot (mean [tMaxSeparateTurn] of searchers) / tickLength"
-
-PLOT
-1472
-11
-1672
-161
-plot 5
-NIL
-NIL
-0.0
-10.0
-0.0
-0.2
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot (mean [tMoveDistance] of searchers) / tickLength"
 
 SLIDER
 913
@@ -1110,24 +893,6 @@ DetectionChance
 NIL
 HORIZONTAL
 
-PLOT
-1472
-167
-1672
-317
-plot 1
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"" ""
-PENS
-"default" 1.0 0 -16777216 true "" "plot (mean [tTrackingRange] of searchers)"
-
 BUTTON
 977
 53
@@ -1135,7 +900,7 @@ BUTTON
 86
 Go GA
 goGA
-NIL
+T
 1
 T
 OBSERVER
@@ -1154,7 +919,7 @@ populationGA
 populationGA
 0
 50
-7
+4
 1
 1
 NIL
@@ -1203,16 +968,44 @@ SLIDER
 908
 500
 1081
-534
+533
 maxGenerations
 maxGenerations
 0
 75
-2
+4
 1
 1
 NIL
 HORIZONTAL
+
+MONITOR
+1093
+302
+1182
+347
+NIL
+generationNo
+17
+1
+11
+
+BUTTON
+977
+17
+1060
+50
+Setup GA
+setupGA
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1615,18 +1408,11 @@ NetLogo 5.1.0
       <value value="25"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="GAexperiment" repetitions="2" runMetricsEveryStep="false">
+  <experiment name="GAexperiment" repetitions="5" runMetricsEveryStep="false">
     <setup>setup</setup>
     <go>goGA</go>
-    <metric>last sort fitnessList fitnessList</metric>
-    <metric>mean [tVision] of Searchers</metric>
-    <metric>mean [tCollisionDistance] of Searchers</metric>
-    <metric>mean [tMinimumSeparation] of Searchers</metric>
-    <metric>mean [tMaxAlignTurn] of Searchers</metric>
-    <metric>mean [tMaxCohereTurn] of Searchers</metric>
-    <metric>mean [tMaxSeparateTurn] of Searchers</metric>
-    <metric>mean [tMoveDistance] of Searchers</metric>
-    <metric>mean [tTrackingRange] of Searchers</metric>
+    <metric>last sort fitnessList</metric>
+    <metric>item (position last sort fitnessList fitnessList) gaListOld</metric>
     <enumeratedValueSet variable="noVictims">
       <value value="20"/>
     </enumeratedValueSet>
@@ -1637,7 +1423,7 @@ NetLogo 5.1.0
       <value value="74"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="maxGenerations">
-      <value value="3"/>
+      <value value="30"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="TurtleColision">
       <value value="true"/>
@@ -1660,11 +1446,9 @@ NetLogo 5.1.0
     <enumeratedValueSet variable="population">
       <value value="25"/>
     </enumeratedValueSet>
-    <enumeratedValueSet variable="DetectionChance">
-      <value value="80"/>
-    </enumeratedValueSet>
+    <steppedValueSet variable="DetectionChance" first="10" step="10" last="100"/>
     <enumeratedValueSet variable="populationGA">
-      <value value="7"/>
+      <value value="20"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
