@@ -341,7 +341,7 @@ to-report create-next-generation
   let TotalGene []
   let crossover-count  (floor (populationGA * crossover-rate / 100 / 2))
   let t1Size 5
-  let t2Size (populationGA / 2)
+  let t2Size (12)
   repeat crossover-count [
     ;select the parents, p1 and p2
     let p1 position last sort (n-of t1Size fitnessList) fitnessList
@@ -401,6 +401,7 @@ to goGA
   ;Create the Next generation
   ;set gaListOld evolveGA
   set gaListOld create-next-generation
+  if last sort fitnessList > 0.8 and generationNo > 3 [stop]
 end
 
 to plotFitness
@@ -713,10 +714,10 @@ end
 GRAPHICS-WINDOW
 15
 10
-833
-849
-50
-50
+353
+369
+20
+20
 8.0
 1
 10
@@ -727,10 +728,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--50
-50
--50
-50
+-20
+20
+-20
+20
 1
 1
 1
@@ -780,7 +781,7 @@ population
 population
 0
 200
-20
+25
 1
 1
 NIL
@@ -857,7 +858,7 @@ worldSizex
 worldSizex
 0
 150
-100
+40
 1
 1
 NIL
@@ -872,7 +873,7 @@ worldSizey
 worldSizey
 0
 150
-100
+40
 1
 1
 NIL
@@ -902,7 +903,7 @@ noVictims
 noVictims
 0
 100
-20
+10
 1
 1
 NIL
@@ -917,7 +918,7 @@ DetectionChance
 DetectionChance
 0
 100
-50
+20
 1
 1
 NIL
@@ -949,7 +950,7 @@ populationGA
 populationGA
 0
 50
-10
+50
 1
 1
 NIL
@@ -1046,7 +1047,7 @@ noReps
 noReps
 1
 10
-3
+5
 1
 1
 NIL
@@ -1071,7 +1072,7 @@ MONITOR
 1910
 298
 2012
-344
+343
 % done for gen
 (length fitnessList) / populationGA * 100
 1
@@ -1522,13 +1523,21 @@ NetLogo 5.1.0
       <value value="20"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="detectionChanceGA" repetitions="10" runMetricsEveryStep="false">
+  <experiment name="controlGA" repetitions="5" runMetricsEveryStep="false">
     <setup>setupGA</setup>
     <go>goGA</go>
     <metric>last sort fitnessList</metric>
     <metric>mean fitnessList</metric>
-    <metric>grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
-    <steppedValueSet variable="DetectionChance" first="10" step="10" last="100"/>
+    <metric>item 0 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 1 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 2 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 3 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 4 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 5 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 6 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 7 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <metric>item 8 grayToDec (item (position last sort fitnessList fitnessList) gaListOld)</metric>
+    <steppedValueSet variable="DetectionChance" first="20" step="20" last="100"/>
     <enumeratedValueSet variable="population">
       <value value="25"/>
     </enumeratedValueSet>
@@ -1536,16 +1545,20 @@ NetLogo 5.1.0
       <value value="true"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="worldSizex">
-      <value value="80"/>
+      <value value="40"/>
+      <value value="90"/>
+      <value value="150"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="worldSizey">
-      <value value="80"/>
+      <value value="40"/>
+      <value value="90"/>
+      <value value="150"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="divisionRate">
       <value value="100"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="populationGA">
-      <value value="20"/>
+      <value value="50"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="maxGenerations">
       <value value="30"/>
@@ -1563,7 +1576,14 @@ NetLogo 5.1.0
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="noVictims">
+      <value value="10"/>
       <value value="20"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="noReps">
+      <value value="5"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="crossover-rate">
+      <value value="75"/>
     </enumeratedValueSet>
   </experiment>
 </experiments>
