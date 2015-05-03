@@ -401,7 +401,7 @@ to goGA
   ;Create the Next generation
   ;set gaListOld evolveGA
   set gaListOld create-next-generation
-  if last sort fitnessList > 0.8 and generationNo > 3 [stop]
+  if last sort fitnessList > 0.9 and generationNo > 2 [stop]
 end
 
 to plotFitness
@@ -1523,7 +1523,7 @@ NetLogo 5.1.0
       <value value="20"/>
     </enumeratedValueSet>
   </experiment>
-  <experiment name="controlGA" repetitions="5" runMetricsEveryStep="false">
+  <experiment name="controlGA" repetitions="3" runMetricsEveryStep="false">
     <setup>setupGA</setup>
     <go>goGA</go>
     <metric>last sort fitnessList</metric>
@@ -1576,7 +1576,6 @@ NetLogo 5.1.0
       <value value="false"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="noVictims">
-      <value value="10"/>
       <value value="20"/>
     </enumeratedValueSet>
     <enumeratedValueSet variable="noReps">
