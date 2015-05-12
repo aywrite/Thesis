@@ -418,6 +418,54 @@ to setupGA
   set gaListOld GenerateGeneticCode (populationGA) (TRUE)
 end
 
+to setupCLONAG
+  
+end
+
+to-report select [NoElements inputGeneList inputFitnessList]
+  ;dummy for now
+  report n-of NoElements inputGeneList
+end
+
+to-report affinity [AbList AgParameters]
+  let counter 0
+  let numAbs length AbList
+  set fitnessList []
+  while [counter < numAbs] [
+    let i 0
+    let fitnessTemp 0
+    while [i < noReps] [
+      set fitnessTemp (fitnessTemp + modelRun (counter))
+      set i (i + 1)
+    ]
+    set fitnessList lput (fitnessTemp / noReps) fitnessList
+    set counter (counter + 1)
+  ]  
+  report fitnessList
+end
+
+to CLONAG [Ab Ag Ngen n d L Beta]
+  if generationNo > maxGenerations [stop]
+  ;Generate or input the list of Ag's (mission scenarios) to be faced
+  ;pick an Ag from the list
+  ;;
+  ;; 2 Run the mission for each of the Ab's, generating a list of Fitnesses f
+  ;;
+  let fj affinity (Ab) (Agj) ;2
+                              ;
+  let Abjn select (n) (Ab) (fj) ;3
+                                       ;
+  let Cj clone (Abjn) ;4
+                        ;
+  let Cjstar hypermut (Cj) (fj) ;5
+             ;
+  let fjstar affinity (Cjstar) (Agj);6
+             ;
+  let Abstar ;7
+             ;
+  let Abmj ;8
+end
+
 to goGA
   if generationNo > maxGenerations [stop]
   ;Run with the new generation
