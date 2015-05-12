@@ -16,7 +16,8 @@
 ;   limitations under the License.
 ;------------------------------------------------------------------------------
 
-__includes ["VariableDeclarations.nls"]
+__includes ["VariableDeclarations.nls" "Clonag.nls"]
+
 
 to initGlobals
   ;;SETUP WORLD:: 
@@ -67,18 +68,27 @@ to initGlobals
   set tTrackingRangeBitLength 4
   set tDefaultTurnBitLength 1
   
-  if RandomizeWorld = TRUE [RandomWorld]
+  ;ImportWorldValues (RandomWorldGene)
 end
 
-to RandomWorld
-  set worldSizex (random 110 + 40)
-  set worldSizey (random 110 + 40)
-  set noVictims (random 20 + 5)
-  set detectionChance (random 90 + 10)
-  set victimDist (random 15 + 10)
-  set currentStrength (random 5 + 1) / 100
-  set OceanTemperature (random 20 + 10)
-  ;ifelse random 2 = 0 [set density 0][set density random 25]
+to ImportWorldValues [WorldGene]
+  set worldSizex item 0 WorldGene
+  set worldSizey item 1 WorldGene
+  set noVictims item 2 WorldGene
+  set detectionChance item 3 WorldGene
+  set victimDist item 4 WorldGene
+  set currentStrength item 5 WorldGene
+  set OceanTemperature item 6 WorldGene
+end
+
+to-report RandomWorldGene
+  report (list (random 110 + 40)
+    (random 110 + 40)
+    (random 20 + 5)
+    (random 90 + 10)
+    (random 15 + 10)
+    ((random 5 + 1) / 100)
+    (random 20 + 10))
 end
 
 to initWorld
@@ -411,7 +421,7 @@ to setupGA
   set generationNo 0
   reset
   initGlobals
-  RandomWorld
+  ImportWorldValues (RandomWorldGene)
   initWorld
   reset-ticks
   set fitnessList []
@@ -419,51 +429,51 @@ to setupGA
 end
 
 to setupCLONAG
-  
-end
-
-to-report select [NoElements inputGeneList inputFitnessList]
-  ;dummy for now
-  report n-of NoElements inputGeneList
-end
-
-to-report affinity [AbList AgParameters]
-  let counter 0
-  let numAbs length AbList
+  clear-all
+  ;First Run
+  reset
+  initGlobals
+  ImportWorldValues (RandomWorldGene)
+  initWorld
+  reset-ticks
   set fitnessList []
-  while [counter < numAbs] [
-    let i 0
-    let fitnessTemp 0
-    while [i < noReps] [
-      set fitnessTemp (fitnessTemp + modelRun (counter))
-      set i (i + 1)
-    ]
-    set fitnessList lput (fitnessTemp / noReps) fitnessList
-    set counter (counter + 1)
-  ]  
-  report fitnessList
+  set Ab GenerateGeneticCode (populationGA) (TRUE)
+  set M 10
+  set Ag n-values M [RandomWorldGene]
+  set Abm n-values M [randomGeneCode] ;change the length of this, fill with zeros?
+  set fm n-values M [0] ;change the length of this, fill with zeros?
 end
 
-to CLONAG [Ab Ag Ngen n d L Beta]
-  if generationNo > maxGenerations [stop]
-  ;Generate or input the list of Ag's (mission scenarios) to be faced
-  ;pick an Ag from the list
+to goCLONAG
+  if generationNo >= maxGenerations [stop]
   ;;
-  ;; 2 Run the mission for each of the Ab's, generating a list of Fitnesses f
+  let j 0
+  let n 5
+  let Beta 1
+  
+  while [j < M] [
+    ;;
+    let Agj item j Ag ;1
+    ;show "testing"
+    let fj affinity (Ab) (Agj) ;2
+    let Abjn select (n) (Ab) (fj) ;3
+    let fjn select (n) (fj) (fj) ;3B the shorter ordered fitness list, corresponding to the elements of Abjn
+    let Cj clone (Abjn) (Beta) (fjn) ;4
+    let fjCn clone (fjn) (Beta) (fjn) ;4B the cloned fitness list, corresponding to the elements of Cj
+    let Cjstar hypermut (Cj) (fjCn) ;5
+    ;show "testing clones"
+    let fjstar affinity (Cjstar) (Agj);6
+    let Abstar first select (1) (Cjstar) (fjstar);7
+    let fAbStar item (position Abstar Cjstar) fjstar ;7B the shorter fitness list corresponding to that of Abstar
+    if fAbStar >= (item j fm) [set Abm replace-item j Abm Abstar set fm replace-item j fm fAbStar]
+    set Ab rebuild (Ab) (Abm) ;8
+    
+    ;increment the counter
+    ;show j
+    set j (j + 1)
+  ]
   ;;
-  let fj affinity (Ab) (Agj) ;2
-                              ;
-  let Abjn select (n) (Ab) (fj) ;3
-                                       ;
-  let Cj clone (Abjn) ;4
-                        ;
-  let Cjstar hypermut (Cj) (fj) ;5
-             ;
-  let fjstar affinity (Cjstar) (Agj);6
-             ;
-  let Abstar ;7
-             ;
-  let Abmj ;8
+  set generationNo (generationNo + 1) 
 end
 
 to goGA
@@ -508,6 +518,24 @@ to-report modelRun [index]
   reset-ticks
   ask searchers [
     set tGeneticCode item index gaListOld
+    set tNewGeneticCode tGeneticCode
+    extractDNA (tGeneticCode)
+  ]
+  loop [
+    if not any? victims [report calcFitnessGA]
+    if (ticks) >= (totalGATicks) [report calcFitnessGA]
+    go
+  ]
+end
+
+to-report modelRunCLONAG [inputGene Agj]
+  reset
+  initGlobals
+  ImportWorldValues (Agj)
+  initWorld
+  reset-ticks
+  ask searchers [
+    set tGeneticCode inputGene
     set tNewGeneticCode tGeneticCode
     extractDNA (tGeneticCode)
   ]
@@ -799,9 +827,9 @@ end
 GRAPHICS-WINDOW
 15
 10
-1090
-857
-66
+674
+585
+40
 -1
 8.0
 1
@@ -813,10 +841,10 @@ GRAPHICS-WINDOW
 0
 0
 1
--66
-66
--35
-66
+-40
+40
+-27
+40
 1
 1
 1
@@ -866,7 +894,7 @@ population
 population
 0
 200
-25
+20
 1
 1
 NIL
@@ -943,7 +971,7 @@ worldSizex
 worldSizex
 0
 150
-132
+81
 1
 1
 NIL
@@ -958,7 +986,7 @@ worldSizey
 worldSizey
 0
 150
-71
+54
 1
 1
 NIL
@@ -988,7 +1016,7 @@ noVictims
 noVictims
 0
 100
-11
+10
 1
 1
 NIL
@@ -1003,7 +1031,7 @@ DetectionChance
 DetectionChance
 0
 100
-54
+71
 1
 1
 NIL
@@ -1035,7 +1063,7 @@ populationGA
 populationGA
 0
 50
-40
+15
 1
 1
 NIL
@@ -1089,7 +1117,7 @@ maxGenerations
 maxGenerations
 0
 75
-30
+10
 1
 1
 NIL
@@ -1121,7 +1149,7 @@ noReps
 noReps
 1
 10
-4
+3
 1
 1
 NIL
@@ -1186,7 +1214,7 @@ victimDist
 victimDist
 1
 40
-23
+16
 1
 1
 NIL
@@ -1201,7 +1229,7 @@ currentStrength
 currentStrength
 0
 10
-0.02
+0.01
 0.01
 1
 NIL
@@ -1216,11 +1244,45 @@ OceanTemperature
 OceanTemperature
 0
 30
-21
+17
 1
 1
 deg C
 HORIZONTAL
+
+BUTTON
+1658
+19
+1768
+53
+NIL
+setupCLONAG
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+BUTTON
+1658
+55
+1768
+89
+Go Clonag
+goCLONAG
+T
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -1850,6 +1912,60 @@ NetLogo 5.1.0
       <value value="false"/>
     </enumeratedValueSet>
     <steppedValueSet variable="OceanTemperature" first="0" step="1" last="30"/>
+  </experiment>
+  <experiment name="CLONAGrun" repetitions="1" runMetricsEveryStep="true">
+    <setup>setupCLONAG</setup>
+    <go>goCLONAG</go>
+    <metric>Ab</metric>
+    <metric>Ag</metric>
+    <metric>Abm</metric>
+    <metric>fm</metric>
+    <metric>item 0 fm</metric>
+    <metric>item 1 fm</metric>
+    <metric>item 2 fm</metric>
+    <metric>item 3 fm</metric>
+    <metric>item 4 fm</metric>
+    <metric>item 5 fm</metric>
+    <metric>item 6 fm</metric>
+    <metric>item 7 fm</metric>
+    <metric>item 8 fm</metric>
+    <metric>item 9 fm</metric>
+    <enumeratedValueSet variable="Hetro">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="doEvolveCS">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="TurtleColision">
+      <value value="true"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="RandomizeWorld">
+      <value value="false"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="crossover-rate">
+      <value value="75"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="decayRate">
+      <value value="50"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="maxGenerations">
+      <value value="10"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="Density">
+      <value value="0"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="noReps">
+      <value value="3"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="populationGA">
+      <value value="15"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="divisionRate">
+      <value value="100"/>
+    </enumeratedValueSet>
+    <enumeratedValueSet variable="population">
+      <value value="20"/>
+    </enumeratedValueSet>
   </experiment>
 </experiments>
 @#$#@#$#@

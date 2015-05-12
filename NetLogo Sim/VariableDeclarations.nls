@@ -97,6 +97,13 @@ globals [
   RIGHTTURN
   LEFTTURN
   
+  ;clonag
+  M
+  fm
+  Abm
+  Ag
+  Ab
+  
   
   ;BitSizes
   tVisionBitLength

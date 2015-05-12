@@ -1,28 +1,42 @@
-to CLONAG [Ab Ag Ngen n d L Beta]
+to CLONAG [Ab Ag Ngen n Beta]
   ;if generationNo > maxGenerations [stop]
   ;Generate or input the list of Ag's (mission scenarios) to be faced
   ;pick an Ag from the list
   ;;
   ;; 2 Run the mission for each of the Ab's, generating a list of Fitnesses f
   ;;
-  let Abmj []
-  let j 0
-  ;;
-  let Agj item j Ag ;1
   
-  let fj affinity (Ab) (Agj) ;2
-                             ;
-  let Abjn select (n) (Ab) (fj) ;3
-                                ;
-  let Cj clone (Abjn) (Beta) (fj) ;4
-                      ;
-  let Cjstar hypermut (Cj) (fj) ;5
-                                ;
-  let fjstar affinity (Cjstar) (Agj);6
-                                    ;
-  let Abstar select (1) (Cjstar) (fjstar);7
-                                         ;
-  set Abmj insert (Abmj) (Abstar);8
+  let i 0
+  let M length Ag
+  let Abm n-values M [randomGeneCode] ;change the length of this, fill with zeros?
+  let fm n-values M [0] ;change the length of this, fill with zeros?
+  ;;
+  while [i < Ngen] [
+    let j 0
+    
+    while [j < M] [
+      ;;
+      let Agj item j Ag ;1
+      let fj affinity (Ab) (Agj) ;2
+      let Abjn select (n) (Ab) (fj) ;3
+      let fjn select (n) (fj) (fj) ;3B the shorter ordered fitness list, corresponding to the elements of Abjn
+      let Cj clone (Abjn) (Beta) (fjn) ;4
+      let fjCn clone (fjn) (Beta) (fjn) ;4B the cloned fitness list, corresponding to the elements of Cj
+      let Cjstar hypermut (Cj) (fjCn) ;5
+      let fjstar affinity (Cjstar) (Agj);6
+      let Abstar first select (1) (Cjstar) (fjstar);7
+      let fAbStar item (position Abstar Cjstar) fjstar ;7B the shorter fitness list corresponding to that of Abstar
+      if fAbStar >= (item j fm) [set Abm replace-item j Abm Abstar set fm replace-item j fm fAbStar]
+      set Ab rebuild (Ab) (Abm) ;8
+
+      
+      ;;
+      ;increment the counter
+      set j (j + 1)
+    ]
+    set i (i + 1)
+  ]
+  show Ab
 end
 
 to-report affinity [inputAb inputAg]
@@ -33,13 +47,25 @@ to-report affinity [inputAb inputAg]
     let i 0
     let fitnessTemp 0
     while [i < noReps] [
-      set fitnessTemp (fitnessTemp + modelRun (counter))
+      ;set fitnessTemp (fitnessTemp + modelRun (counter))
+      set fitnessTemp geneSum (item counter inputAb) (inputAg)
       set i (i + 1)
     ]
     set affinityList lput (fitnessTemp / noReps) affinityList
     set counter (counter + 1)
   ]  
   report affinityList
+end
+  
+to-report geneSum [inputGene inputTest]
+  let i 0
+  let result 0
+  while [i < length inputGene] [
+    set result result + sum item i inputGene
+    set i (i + 1)
+  ]
+  ifelse inputTest = 1 [set result result][set result (1 / (result + 1))]
+  report result
 end
 
 to-report select [NoElements inputGeneList inputFitnessList]
@@ -54,34 +80,69 @@ to-report select [NoElements inputGeneList inputFitnessList]
 end
 
 to-report clone [inputGeneList inputBeta inputFitnessList]
-  let counteri 0
-  let counterj 0
+  let i 0
+  
   let outputCloneList []
   let numInputGenes length inputGeneList
   
-  while [counteri < numInputGenes] [
-   let numClones round ((inputBeta * numInputGenes) / counteri)
-   while [counterj < numclones] [
-    set outputCloneList lput (item counteri inputGeneList) outputCloneList
-    set counterj (counterj + 1) 
+  while [i < numInputGenes] [
+   let numClones round ((inputBeta * numInputGenes) / (i + 1))
+   let j 0
+   while [j < numclones] [
+    set outputCloneList lput (item i inputGeneList) outputCloneList
+    set j (j + 1) 
    ] 
-   set counteri (counteri + 1) 
+   set i (i + 1)
   ]
   
   report outputCloneList
 end
 
 to-report hypermut [inputGeneList inputFitnessList]
+  let i 0
+  let numInputGenes length inputGeneList
+  let mutatedGeneList []
   
+  while [i < numInputGenes] [
+    let mutationFactor (((item i inputFitnessList) * 30) + 1)
+    set mutatedGeneList lput (mutate (item i inputGeneList) (mutationFactor)) mutatedGeneList
+    set i (i + 1)
+  ]
+  report mutatedGeneList
 end
 
-to-report insert [inputGeneList inputGeneItem]
+to-report rebuild [inputGeneList inputGeneMemoryList]
+  let numInputGenes length inputGeneList
+  let numInputMemoryGenes length inputGeneMemoryList
+  let outputGeneList []
+  let i 0
   
+  while [i < numInputGenes] [
+    ifelse i < numInputMemoryGenes [set outputGeneList lput item i inputGeneMemoryList outputGeneList][set outputGeneList lput randomGeneCode outputGeneList]
+    
+    set i (i + 1)
+  ]
+  report outputGeneList
 end
 
-;;DELETE THIS STUFF
-to-report modelRun [indexthing]
-  
+to-report mutate [inputGeneList mutationRate]
+  let pGeneFlip mutationRate
+  let i 0
+  let imax length inputGeneList - 1
+  while [i < imax] [
+    let j 0
+    let jmax length item i inputGeneList - 1
+    while [j < jmax] [
+      if random pGeneFlip = 0 [ 
+        let oldGene item i inputGeneList
+        ifelse item j oldGene = 0 [set oldGene replace-item j oldGene 1][set OldGene replace-item j oldGene 0]
+        set inputGeneList replace-item i inputGeneList oldGene
+      ]
+      set j (j + 1)
+    ]
+    set i (i + 1)
+  ]
+  report inputGeneList
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -112,15 +173,15 @@ ticks
 30.0
 
 SLIDER
-1160
+1165
 173
-1332
+1337
 206
 noReps
 noReps
 0
 100
-50
+1
 1
 1
 NIL
